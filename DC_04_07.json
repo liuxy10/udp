@@ -1,0 +1,44 @@
+
+{
+    "experiment_name": "Data Collection 04/07",
+    "description": "This experiment collects data by varying three control variables across specified ranges.",
+    "control_variables": [
+
+
+      {
+        "name": "init_STF_ang", 
+        "name_bionics": "POWER_KNEE_STANCE_FLEXION_LEVEL",
+        "min": 0,
+        "max": 100,
+        "default": 50,
+        "number of steps": 5,
+        "unit": "rad"
+      },
+      {
+        "name": "SWF_target_ang",
+        "name_bionics": "POWER_KNEE_MAX_SWING_FLEXION_ANGLE_WALKING",
+        "min": 40,
+        "max": 75,
+        "default": 0,
+        "number of steps": 5,
+        "unit": "rad"
+      },
+
+      {
+        "name": "TOA",
+        "name_bionics":"POWER_KNEE_TOA_TORQUE_LEVEL",
+        "description": "Amount of unloading before triggering TOA subphase during walking.",
+        "min":0,
+        "max": 100,
+        "default": 0,
+        "number of steps": 5,
+        "unit": "%"
+      }
+
+    ],
+    "base_folder_path": "ExperimentData/DC_04_07/",
+    "log_time_per_session_sec": 0,
+    "log_premature_time_per_session_sec": 30,
+    "treadmill_speed": 0.5
+}
+  

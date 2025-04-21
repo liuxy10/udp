@@ -1,0 +1,291 @@
+
+{
+
+    "TEST": [
+        {
+            "name": "LEG_USER_WEIGHT",
+            "description": "User weight",
+            "min": 50,
+            "max": 116,
+            "default": 80,
+            "valueBytes": [
+              "DEVICE.LEG",
+              116,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "kg",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        }
+
+    ],
+    
+    "STATE": [
+        {
+            "name": "LEG_GROUND_REACTION_FORCE",
+            "description": "Measured ground reaction force from all sensors",
+            "min": "INT32_MIN",
+            "max": "INT32_MAX",
+            "default": 0,
+            "valueBytes": [
+              "DEVICE.LEG",
+              136,
+              "VARFLAGS.READ | VARFLAGS.MANDATORY",
+              "DATATYPE.INT32"
+            ],
+            "unit": "",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP | DEVICE_APPS.RHEO_KNEE4_MAIN_APP"
+          },
+          {
+          "name": "KNEE_JOINT_ANGLE",
+          "description": "TBD",
+          "min": "INT16_MIN",
+          "max": "INT16_MAX",
+          "default": 0,
+          "valueBytes": [
+            "DEVICE.KNEE",
+            3,
+            "VARFLAGS.READ",
+            "DATATYPE.INT16"
+          ],
+          "unit": "°",
+          "supportFlags": "DEVICE_APPS.RHEO_KNEE_MAIN_APP|DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        }
+
+    ],
+    "PK_RW_walk": [
+        {
+            "name": "LEG_USER_WEIGHT",
+            "description": "User weight",
+            "min": 50,
+            "max": 116,
+            "default": 80,
+            "valueBytes": [
+              "DEVICE.LEG",
+              116,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "kg",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+          },
+        
+        {
+            "name": "POWER_KNEE_MAX_SWING_FLEXION_ANGLE_WALKING",
+            "description": "The targeted flexion angle of knee during swing while walking.",
+            "min": 40,
+            "max": 75,
+            "default": 60,
+            "valueBytes": [
+              "DEVICE.POWER_KNEE",
+              53,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "°",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        },
+
+        {
+            "name": "POWER_KNEE_TOA_TORQUE_LEVEL",
+            "description": "Amount of unloading before triggering TOA subphase during walking.",
+            "min": 0,
+            "max": 100,
+            "default": 100,
+            "valueBytes": [
+              "DEVICE.POWER_KNEE",
+              52,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "%",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        },
+        {
+            "name": "POWER_KNEE_FA_FP_WALKING_SPEED",
+            "description": "The thigh rotation speed during walking to transition from slow walking to fast walking.",
+            "min": 0,
+            "max": 100,
+            "default": 50,
+            "valueBytes": [
+              "DEVICE.POWER_KNEE",
+              54,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "°/s",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        },
+        {
+            "name": "POWER_KNEE_STANCE_FLEXION_LEVEL",
+            "description": "Amount of stance flexion for the knee during walking.",
+            "min": 0,
+            "max": 100,
+            "default": 50,
+            "valueBytes": [
+              "DEVICE.POWER_KNEE",
+              51,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "%",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+        },
+        {
+            "name": "POWER_KNEE_FA_FP_STEP_LIMIT",
+            "description": "The min step count meeting speed criteria needed to transition from slow walking to fast walking.",
+            "min": 0,
+            "max": 4,
+            "default": 2,
+            "valueBytes": [
+              "DEVICE.POWER_KNEE",
+              55,
+              "VARFLAGS.RW",
+              "DATATYPE.UINT8"
+            ],
+            "unit": "steps",
+            "supportFlags": "DEVICE_APPS.POWER_KNEE_MAIN_APP"
+          }
+
+    ],
+    "PK_RW": [
+        {
+            "name": "POWER_KNEE_AUTO_ADJUSTMENT_VALID_STEPS",
+            "description": "Display the number of valid steps encountered in the process."
+        },
+        {
+            "name": "POWER_KNEE_RAMP_RESISTANCE_LEVEL",
+            "description": "The resistance level during ramp descent."
+        },
+        {
+            "name": "POWER_KNEE_FLEXION_ASSISTANCE_LEVEL",
+            "description": "Min flex torque while walking."
+        },
+        {
+            "name": "POWER_KNEE_EXTENSION_ASSISTANCE_LEVEL",
+            "description": "Min ext torque while walking."
+        },
+        {
+            "name": "POWER_KNEE_GEN_ASSISTANCE_LEVEL",
+            "description": "The assistance level during stair ascent activity."
+        },
+        {
+            "name": "POWER_KNEE_SUP_ASSISTANCE_LEVEL",
+            "description": "The assistance level during standing up activity."
+        },
+        {
+            "name": "POWER_KNEE_AMPUTATION_TYPE",
+            "description": "States the amputation type of the user."
+        },
+        {
+            "name": "POWER_KNEE_RAMP_TORQUE_LEVEL",
+            "description": "The flexion torque level needed to get knee to detect ramps."
+        },
+        {
+            "name": "POWER_KNEE_SDN_TOELOAD_LEVEL",
+            "description": "The min difference between toe and heel load level needed to trigger the knee to yield."
+        },
+        {
+            "name": "POWER_KNEE_SDN_MOVEMENT_LEVEL",
+            "description": "The maximum allowed backwards movement to trigger the knee to yield."
+        },
+        {
+            "name": "POWER_KNEE_SDN_TORQUE_LEVEL",
+            "description": "The min torque level needed to trigger the knee to yield."
+        },
+        {
+            "name": "POWER_KNEE_FA_FP_STEP_LIMIT",
+            "description": "The min step count meeting speed criteria needed to transition from slow walking to fast walking."
+        },
+        {
+            "name": "POWER_KNEE_PROFILE_ID",
+            "description": "Control profile Id."
+        },
+        {
+            "name": "POWER_KNEE_SDN_RESISTANCE_LEVEL",
+            "description": "The resistance level during sit down activity."
+        },
+        {
+            "name": "POWER_KNEE_DIS_EXT_SPEED",
+            "description": "The extension speed of the knee in swing during stairs down activity."
+        },
+        {
+            "name": "POWER_KNEE_GEN_FLEXION_ANGLE",
+            "description": "The flexion angle of the knee in swing during stair ascent."
+        },
+        {
+            "name": "POWER_KNEE_DISABLE_STAIR_ASCENT",
+            "description": "Enables or disables stair ascent activity."
+        },
+        {
+            "name": "POWER_KNEE_GEN_FOOT_PLACEMENT_ANGLE",
+            "description": "The foot placement angle of the knee during stair ascent."
+        },
+        {
+            "name": "POWER_KNEE_MAX_SWING_FLEXION_ANGLE_WALKING",
+            "description": "The targeted flexion angle of knee during swing while walking."
+        },
+        {
+            "name": "POWER_KNEE_DIS_RESISTANCE_LEVEL",
+            "description": "The resistance level during stairs down activity."
+        },
+        {
+            "name": "POWER_KNEE_FA_FP_WALKING_SPEED",
+            "description": "The thigh rotation speed during walking to transition from slow walking to fast walking."
+        },
+        {
+            "name": "POWER_KNEE_TOA_TORQUE_LEVEL",
+            "description": "Amount of unloading before triggering TOA subphase during walking."
+        },
+        {
+            "name": "POWER_KNEE_SUP_SPEED_LEVEL",
+            "description": "The desired velocity during SU."
+        },
+        {
+            "name": "POWER_KNEE_STANCE_FLEXION_LEVEL",
+            "description": "Amount of stance flexion for the knee during walking."
+        },
+        {
+            "name": "POWER_KNEE_EXERCISE_MODE",
+            "description": "Enable exercise mode."
+        }
+    ],
+    "PK_R": [
+        {
+            "name": "POWER_KNEE_CONT_GAIN_KP",
+            "description": "Controller Position Gain."
+        },
+        {
+            "name": "POWER_KNEE_CONT_GAIN_KD",
+            "description": "Controller Velocity Gain."
+        },
+        {
+            "name": "POWER_KNEE_CONT_GAIN_KM",
+            "description": "Controller Torque Gain."
+        },
+        {
+            "name": "POWER_KNEE_CONT_MIN_OUTPUT",
+            "description": "Minimum output to the motor."
+        },
+        {
+            "name": "POWER_KNEE_CONT_TARGET_ANGLE",
+            "description": "Controller Target Angle."
+        },
+        {
+            "name": "POWER_KNEE_CONT_TARGET_VELOCITY",
+            "description": "Controller Target Velocity."
+        },
+        {
+            "name": "POWER_KNEE_TOE_OFF_CRITERIA_MET",
+            "description": "All criteria for toe off assist are met."
+        },
+        {
+            "name": "POWER_KNEE_EXTENSION_ASSISTANCE_LEVEL",
+            "description": "Min ext torque while walking."
+        },
+        {
+            "name": "POWER_KNEE_FLEXION_ASSISTANCE_LEVEL",
+            "description": "Min flex torque while walking."
+        }
+    ]
+}

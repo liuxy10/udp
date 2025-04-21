@@ -1,0 +1,49 @@
+/** @file
+ * @defgroup Össur Power Knee Mainstream
+ * @{
+ * @ingroup framework
+ * @brief Database Format Definitions.
+ *
+ * @details
+ * Declearations of the Hardware Parameters database format.
+ *
+ * @author Árni Einarsson
+ * @date FEB 2018
+ *
+ * @copyright Copyright (c) 2018 Össur.\n
+ * All rights reserved. This software may not be reproduced by
+ * any means without express written approval from Össur.
+*/
+
+#include "PKM_APP_DB_UserParamsDef.h"
+
+SUserParamInit SUserParamConf[NB_OF_USER_PARAMS] =
+{
+  ///*bionicVarId,                                          minValue,	maxValue,       value(default)  */
+  {BIONICS_VAR_LEG_USER_WEIGHT,	                           50,	        116,            USER_PARAM_USER_WEIGHT_DEFAULT_VALUE},                  // USER_PARAM_USER_WEIGHT
+  {BIONICS_VAR_LEG_USER_THIGH_LENGTH,                     100,	        800,            USER_PARAM_THIGH_LENGTH_DEFAULT_VALUE},                 // USER_PARAM_THIGH_LENGTH
+  {BIONICS_VAR_LEG_USER_KNEE_HEIGHT,                      100,	        800,            USER_PARAM_SHANK_LENGTH_DEFAULT_VALUE},                 // USER_PARAM_SHANK_LENGTH
+  {BIONICS_VAR_LEG_USER_FOOT_SIZE,                         20,           30,            USER_PARAM_FOOT_LENGTH_DEFAULT_VALUE},                  // USER_PARAM_FOOT_LENGTH
+  // {BIONICS_VAR_POWER_KNEE_SUP_SPEED_LEVEL,                  0,          100,            USER_PARAM_SUP_SPEED_LEVEL_DEFAULT_VALUE},              // USER_PARAM_SUP_SPEED_LEVEL
+  {BIONICS_VAR_POWER_KNEE_PROFILE_ID,                       1,          255,            USER_PARAM_PROFILE_ID_DEFAULT_VALUE},                   // USER_PARAM_PROFILE_ID
+  {BIONICS_VAR_BASE_FEEDBACK_VIBRATION_INTENSITY,           1,	        100,            USER_PARAM_VIBRATION_INTENSITY_DEFAULT_VALUE},          // USER_PARAM_VIBRATION_INTENSITY
+  {BIONICS_VAR_POWER_KNEE_STANCE_FLEXION_LEVEL,             0,          100,            USER_PARAM_STANCE_FLEXION_LEVEL_DEFAULT_VALUE},         // USER_PARAM_STANCE_FLEXION_LEVEL
+  {BIONICS_VAR_POWER_KNEE_TOA_TORQUE_LEVEL,                 0,	        100,            USER_PARAM_TOA_TORQUE_LEVEL_DEFAULT_VALUE},             // USER_PARAM_TOA_TORQUE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_MAX_SWING_FLEXION_ANGLE_WALKING, 40,	         75,            USER_PARAM_FLEX_ANGLE_IN_FA_FP_DEFAULT_VALUE},          // USER_PARAM_FLEX_ANGLE_IN_FA_FP
+  {BIONICS_VAR_POWER_KNEE_FA_FP_WALKING_SPEED,              0,	        100,            USER_PARAM_FA_FP_SPEED_LEVEL_DEFAULT_VALUE},            // USER_PARAM_FA_FP_SPEED_LEVEL
+  {BIONICS_VAR_POWER_KNEE_FA_FP_STEP_LIMIT,                 0,	          4,            USER_PARAM_FA_FP_STEP_BUFFER_DEFAULT_VALUE},            // USER_PARAM_FA_FP_STEP_BUFFER
+  {BIONICS_VAR_POWER_KNEE_SDN_TORQUE_LEVEL,                 5,	         60,            USER_PARAM_SDN_TORQUE_LEVEL_DEFAULT_VALUE},             // USER_PARAM_SDN_TORQUE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_SDN_RESISTANCE_LEVEL,             0,	        100,            USER_PARAM_SDN_RESISTANCE_LEVEL_DEFAULT_VALUE},         // USER_PARAM_SDN_RESISTANCE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_SUP_ASSISTANCE_LEVEL,             0,	        100,            USER_PARAM_SUP_ASSISTANCE_LEVEL_DEFAULT_VALUE},         // USER_PARAM_SUP_ASSISTANCE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_DIS_RESISTANCE_LEVEL,             0,	        100,            USER_PARAM_DIS_RESISTANCE_LEVEL_DEFAULT_VALUE},         // USER_PARAM_DIS_RESISTANCE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_DIS_EXT_SPEED,                    0,	        100,            USER_PARAM_DIS_EXT_SPEED_DEFAULT_VALUE},                // USER_PARAM_DIS_EXT_SPEED
+  {BIONICS_VAR_POWER_KNEE_RAMP_RESISTANCE_LEVEL,	    0,          100,            USER_PARAM_RAMP_RESISTANCE_LEVEL_DEFAULT_VALUE},        // USER_PARAM_RAMP_RESISTANCE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_GEN_ASSISTANCE_LEVEL,             0,	        100,            USER_PARAM_GEN_ASSISTANCE_LEVEL_DEFAULT_VALUE},         // USER_PARAM_GEN_ASSISTANCE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_GEN_FLEXION_ANGLE,               50,	        100,            USER_PARAM_GEN_FLEXION_ANGLE_DEFAULT_VALUE},            // USER_PARAM_GEN_FLEXION_ANGLE
+  {BIONICS_VAR_POWER_KNEE_GEN_FOOT_PLACEMENT_ANGLE,        30,	         70,            USER_PARAM_GEN_FOOT_PLACEMENT_ANGLE_DEFAULT_VALUE},     // USER_PARAM_GEN_FOOT_PLACEMENT_ANGLE
+  {BIONICS_VAR_POWER_KNEE_RAMP_TORQUE_LEVEL,                5,	         60,            USER_PARAM_RAMP_TORQUE_LEVEL_DEFAULT_VALUE},            // USER_PARAM_RAMP_TORQUE_LEVEL
+  {BIONICS_VAR_POWER_KNEE_EXERCISE_MODE,                    0,	          1,            USER_PARAM_EXERCISE_MODE_DEFAULT_VALUE},                // USER_PARAM_EXERCISE_MODE
+  {BIONICS_VAR_POWER_KNEE_DISABLE_STAIR_ASCENT,             0,	          1,            USER_PARAM_DISABLE_STAIR_ASCENT_DEFAULT_VALUE},         // USER_PARAM_DISABLE_STAIR_ASCENT
+  {BIONICS_VAR_POWER_KNEE_AMPUTATION_TYPE,                  0,	        255,            USER_PARAM_AMPUTATION_TYPE_DEFAULT_VALUE},              // USER_PARAM_AMPUTATION_TYPE
+  {BIONICS_VAR_BASE_CALIBRATION_STATUS,                     0,	        255,            USER_PARAM_CALIBRATION_STATUS_DEFAULT_VALUE},           // USER_PARAM_CALIBRATION_STATUS
+};
