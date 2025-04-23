@@ -1,5 +1,5 @@
 import numpy as np
-from udp import *
+from udp_core import *
 # import lspi 
 import time
 import os
