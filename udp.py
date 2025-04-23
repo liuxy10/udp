@@ -1,21 +1,19 @@
 import serial
 import struct
 import time
-import pynput
-from pynput import keyboard
-from pynput.keyboard import Listener, Key
+
 # import keyboard
 # Constants
 START_BYTE = 0xAA
-PACKET_SIZE = 113 * 2  # Adjust if the total packet size is different
+PACKET_SIZE = 200  # Adjust if the total packet size is different
 BAUD_RATE = 460800
-SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0'
-log_file = 'serial_log.txt'
+SERIAL_PORT = 'COM5' #'/dev/cu.usbserial-ABSCHWQ0'
+log_file = 'test.csv'
 
 # Define sensor data format: (name, struct-format)
 SENSOR_DATA = [
     ('TIME_SYSTEM_ON', '<I'),
-    ('GAIT_PHASE', '<B'), # ('ACTIVITY', '<I'),
+    ('GAIT_PHASE', '<B'),  # ('ACTIVITY', '<I'),
     ('GAIT_SUBPHASE', '<B'),  # Special handling for uint8_t
     ('ACTUATOR_POSITION', '<f'),
     ('TORQUE_ESTIMATE', '<f'),
@@ -32,20 +30,20 @@ SENSOR_DATA = [
 
 # Mapping sensor identifier (4 bytes) to sensor names
 SENSOR_ID = {
-    0x24115410: 'TIME_SYSTEM_ON', # int for now
-    0x24111110: 'ACTIVITY', 
-    0x2101C610: 'GAIT_SUBPHASE',
-    0x44010770: 'ACTUATOR_POSITION',
-    0x44010171: 'TORQUE_ESTIMATE',
-    0x44011471: 'ACTUATOR_SETPOINT',
-    0x34118830: 'LOADCELL',
-    0x4401AC10: 'LINEAR_ACC_X_LOCAL',
-    0x4401AD10: 'LINEAR_ACC_Y_LOCAL',
-    0x4401AE10: 'LINEAR_ACC_Z_LOCAL',
-    0x4401B210: 'GRAVITY_VECTOR_X',
-    0x4401B310: 'GRAVITY_VECTOR_Y',
-    0x4401B410: 'GRAVITY_VECTOR_Z',
-    0x44118930: 'KNEE_ANGLE'
+    0x24115410: 'TIME_SYSTEM_ON',  # BIONICS_VAR_BASE_TIME_SYSTEM_ON
+    0x24111110: 'GAIT_PHASE',      # BIONICS_VAR_BASE_GAIT_PHASE
+    0x2101C610: 'GAIT_SUBPHASE',   # BIONICS_VAR_BASE_GAIT_SUBPHASE
+    0x44010770: 'ACTUATOR_POSITION',  # BIONICS_VAR_KNEE_ACTUATOR_POSITION
+    0x44010171: 'TORQUE_ESTIMATE',    # BIONICS_VAR_POWER_KNEE_TORQUE_EST
+    0x44011471: 'ACTUATOR_SETPOINT',  # BIONICS_VAR_POWER_KNEE_ACTUATOR_SETPOINT
+    0x34118830: 'LOADCELL',           # BIONICS_VAR_LEG_GROUND_REACTION_FORCE
+    0x4401AC10: 'LINEAR_ACC_X_LOCAL', # BIONICS_VAR_BASE_LIN_ACC_X_LOCAL
+    0x4401AD10: 'LINEAR_ACC_Y_LOCAL', # BIONICS_VAR_BASE_LIN_ACC_Y_LOCAL
+    0x4401AE10: 'LINEAR_ACC_Z_LOCAL', # BIONICS_VAR_BASE_LIN_ACC_Z_LOCAL
+    0x4401B210: 'GRAVITY_VECTOR_X',   # BIONICS_VAR_BASE_GRAV_VECT_X
+    0x4401B310: 'GRAVITY_VECTOR_Y',   # BIONICS_VAR_BASE_GRAV_VECT_Y
+    0x4401B410: 'GRAVITY_VECTOR_Z',   # BIONICS_VAR_BASE_GRAV_VECT_Z
+    0x44118930: 'KNEE_ANGLE',         # BIONICS_VAR_KNEE_JOINT_ANGLE
 }
 
 
@@ -66,8 +64,13 @@ def parse_packet(data):
         # Optionally: you can validate sensor_identifier with SENSOR_ID.get(sensor_identifier)
         if fmt == '<B':  # Special handling for uint8_t
             value = data[offset+4]
+        elif fmt == '<h':  # Special handling for int16_t
+            value = struct.unpack(fmt, data[offset+4:offset+6])[0]
         else:
             value = struct.unpack(fmt, data[offset+4:offset+8])[0]
+        if abs(value) > 1e7 and name in ['TIME_SYSTEM_ON', 'GRAVITY_VECTOR_X', 'GRAVITY_VECTOR_Y', 'GRAVITY_VECTOR_Z']:  # Check for invalid values
+            print(f"Invalid value for {name}: {value}. Skipping this whole packet.")
+            return None
         packet[name] = value
         offset += 8  # Move to the next sensor data field
 
@@ -94,6 +97,7 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
 
                 # If a start byte is found and we have a full packet, process it.
                 if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
+                    print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
                         log_entry = ', '.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
@@ -101,6 +105,8 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                             print(log_entry)
                         log_file.write(log_entry + "\n")
                         log_file.flush()
+                        buffer = bytearray()  # Reset the buffer
+                    else:
                         buffer = bytearray()  # Reset the buffer
                 
                 if time.time() > end_time_premature and not start_mature:
@@ -110,27 +116,16 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     end_time = time.time() + log_time
                     start_mature = True
 
-
-                        
-                
-                # # if I click space, mark in the log file with a line
-                # def on_press(key):
-                #     if key == Key.space:
-                #         
-                # with Listener(on_press=on_press) as listener:
-                #     listener.join()
-
-
-                        # print(log_entry, end='\r')
         except KeyboardInterrupt:
             print("\nLogging stopped.")
     
     ser.close()
     log_file.close()
-
-
-
-
-
+    
 if __name__ == "__main__":
-    monitor_and_log_serial(log_file="test.csv", log_time = 100, printlog = True)
+    # Example usage
+    log_time = 10  # Set your desired log time in seconds
+    monitor_and_log_serial(log_file, log_time, printlog = True)
+    # plot_data()
+
+

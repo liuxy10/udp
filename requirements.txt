@@ -1,0 +1,6 @@
+pyserial
+pynput
+wireless_protocol_library
+pandas
+numpy
+matplotlib

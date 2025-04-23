@@ -36,7 +36,7 @@
       }
 
     ],
-    "base_folder_path": "ExperimentData/DC_04_07/",
+    "base_folder_path": "DC_04_07",
     "log_time_per_session_sec": 0,
     "log_premature_time_per_session_sec": 30,
     "treadmill_speed": 0.5
