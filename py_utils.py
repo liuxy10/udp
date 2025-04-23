@@ -4,7 +4,7 @@ import numpy as np
 from threading import Thread
 from queue import Queue
 import serial
-from udp import SERIAL_PORT, BAUD_RATE, START_BYTE, PACKET_SIZE, SENSOR_DATA, parse_packet
+from udp_core import SERIAL_PORT, BAUD_RATE, START_BYTE, PACKET_SIZE, SENSOR_DATA, parse_packet
 from mpl_toolkits.mplot3d import Axes3D
 import time
 def get_json_data(path):
