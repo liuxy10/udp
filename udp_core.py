@@ -2,12 +2,13 @@ import serial
 import struct
 import time
 
+import numpy as np
 # import keyboard
 # Constants
 START_BYTE = 0xAA
 PACKET_SIZE = 200  # Adjust if the total packet size is different
 BAUD_RATE = 460800
-SERIAL_PORT = 'COM5' #'/dev/cu.usbserial-ABSCHWQ0'
+SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0'
 log_file = 'test.csv'
 
 # Define sensor data format: (name, struct-format)
@@ -97,13 +98,12 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
 
                 # If a start byte is found and we have a full packet, process it.
                 if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
-                    print('buffer size', len(buffer))
+                    # print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
                         log_entry = ', '.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
                         if printlog: 
-                            # print(log_entry)
-                            print(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"], packet["GRAVITY_VECTOR_Z"])
+                            print("shank angle = ", get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]))
                         log_file.write(log_entry + "\n")
                         log_file.flush()
                         buffer = bytearray()  # Reset the buffer
@@ -122,6 +122,10 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
     
     ser.close()
     log_file.close()
+
+def get_shank_angle_from_gravity_vec_degree(gx, gy):
+    return - np.arcsin(gx/np.sqrt(gx**2 + gy**2)) * 180/np.pi
+
     
 if __name__ == "__main__":
     # Example usage

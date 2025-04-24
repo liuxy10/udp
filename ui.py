@@ -8,16 +8,27 @@ import time
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 try: # If running from the ros ws directory
     from .CommonTestFunctions import *
-    from .py_utils import * 
+    from .plot_real_time import * 
     from .tcpClient import ProstheticKneeTester
 except: # if running solely from the src directory
     from CommonTestFunctions import *
-    from py_utils import *
+    from udp.plot_real_time import *
     from tcpClient import ProstheticKneeTester
 
 import tkinter as tk
 from tkinter import ttk
 from os import makedirs
+
+
+# matplotlib.use('Agg')  # Use a non-GUI backend
+def get_json_data(path):
+    with open(path) as f:
+        data = json.load(f)
+    return data
+
+def save_json_data(path, data):
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
 
 
 class ProstheticKneeUI:

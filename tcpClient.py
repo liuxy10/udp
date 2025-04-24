@@ -8,10 +8,10 @@ import time
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 try: # If running from the ros ws directory
     from .CommonTestFunctions import *
-    from .py_utils import * 
+    from .plot_real_time import * 
 except: # if running solely from the src directory
     from CommonTestFunctions import *
-    from py_utils import *
+    from udp.plot_real_time import *
 
 import tkinter as tk
 from tkinter import ttk
