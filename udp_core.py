@@ -25,7 +25,7 @@ SENSOR_DATA = [
     ('GRAVITY_VECTOR_X', '<f'),
     ('GRAVITY_VECTOR_Y', '<f'),
     ('GRAVITY_VECTOR_Z', '<f'),
-    ('KNEE_ANGLE', '<f'),
+    ('SHANK_ANGLE', '<f'),
 ]
 
 # Mapping sensor identifier (4 bytes) to sensor names
@@ -43,7 +43,7 @@ SENSOR_ID = {
     0x4401B210: 'GRAVITY_VECTOR_X',   # BIONICS_VAR_BASE_GRAV_VECT_X
     0x4401B310: 'GRAVITY_VECTOR_Y',   # BIONICS_VAR_BASE_GRAV_VECT_Y
     0x4401B410: 'GRAVITY_VECTOR_Z',   # BIONICS_VAR_BASE_GRAV_VECT_Z
-    0x44118930: 'KNEE_ANGLE',         # BIONICS_VAR_KNEE_JOINT_ANGLE
+    0x44118930: 'SHANK_ANGLE',         # BIONICS_VAR_KNEE_JOINT_ANGLE
 }
 
 
@@ -102,7 +102,8 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     if packet:
                         log_entry = ', '.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
                         if printlog: 
-                            print(log_entry)
+                            # print(log_entry)
+                            print(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"], packet["GRAVITY_VECTOR_Z"])
                         log_file.write(log_entry + "\n")
                         log_file.flush()
                         buffer = bytearray()  # Reset the buffer
