@@ -153,7 +153,7 @@ def plot_leg_realtime():
                     if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
                         if packet := parse_packet(buffer):
                             # Calculate angles
-                            knee_angle = packet["ACTUATOR_POSITION"]
+                            knee_angle = packet["ACTUATOR_POSITION"] -20
                             shank_angle = get_shank_angle_from_gravity_vec_degree(
                                 packet["GRAVITY_VECTOR_X"],
                                 packet["GRAVITY_VECTOR_Y"]

@@ -8,7 +8,7 @@ import numpy as np
 START_BYTE = 0xAA
 PACKET_SIZE = 200  # Adjust if the total packet size is different
 BAUD_RATE = 460800
-SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0'
+SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0' # double check it in terminal: ls /dev/cu.usb*
 log_file = 'test.csv'
 
 # Define sensor data format: (name, struct-format)
@@ -80,16 +80,21 @@ def parse_packet(data):
 
 
 def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = False):
-    print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Logging data to {log_file}. Press Ctrl+C to exit.")
-    end_time = -1.
+    # print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Logging data to {log_file}. Press Ctrl+C to exit.")
+    # end_time = -1.
+    start_time = time.time()
+    end_time = start_time + log_time
     end_time_premature = time.time() + log_premature
     # Open the serial port and log file
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
+        print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Logging data to {log_file}. Press Ctrl+C to exit.")
         buffer = bytearray()
-        log_file.write(', '.join(name for name, _ in SENSOR_DATA) + "\n")  # Write header
-        start_mature = False
-        try:
+        log_file.write(','.join(name for name, _ in SENSOR_DATA) + "\n")  # Write header
+        start_mature = True
+        # try:
+        while True:
             while (end_time < 0) or (start_mature and time.time() < end_time) :
+            # while True:
                 byte = ser.read(1)
                 if not byte:
                     continue
@@ -102,8 +107,12 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     packet = parse_packet(buffer)
                     if packet:
                         log_entry = ', '.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                        print(log_entry)
                         if printlog: 
-                            print("shank angle = ", get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]))
+                            diff = get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]) + packet["SHANK_ANGLE"]
+                            # print("calculated shank angle = ", cal)
+                            # print(f"diff in shank = {diff:.8f}")
+                            print(get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]), - packet["SHANK_ANGLE"])
                         log_file.write(log_entry + "\n")
                         log_file.flush()
                         buffer = bytearray()  # Reset the buffer
@@ -117,8 +126,8 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     end_time = time.time() + log_time
                     start_mature = True
 
-        except KeyboardInterrupt:
-            print("\nLogging stopped.")
+        # except KeyboardInterrupt:
+        #     print("\nLogging stopped.")
     
     ser.close()
     log_file.close()

@@ -5,6 +5,7 @@ import pathlib
 import statistics
 import time
 
+
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 try: # If running from the ros ws directory
     from .CommonTestFunctions import *
@@ -162,4 +163,13 @@ class ProstheticKneeTester:
 
   
 
+# matplotlib.use('Agg')  # Use a non-GUI backend
+def get_json_data(path):
+    with open(path) as f:
+        data = json.load(f)
+    return data
+
+def save_json_data(path, data):
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
 
