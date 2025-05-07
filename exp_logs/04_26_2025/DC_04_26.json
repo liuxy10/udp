@@ -1,0 +1,47 @@
+
+{
+    "experiment_name": "Data Collection 04/26",
+    "description": "This experiment collects data by varying three control variables across specified ranges.",
+    "control_variables": [
+
+      {
+        "name": "SWF_target_ang",
+        "name_bionics": "POWER_KNEE_MAX_SWING_FLEXION_ANGLE_WALKING",
+        "min": 40,
+        "max": 75,
+        "default": 0,
+        "number of steps": 5,
+        "unit": "rad"
+      },
+
+      {
+        "name": "SW_Init_level",
+        "name_bionics":"KNEE_SWING_INITIATION_ANGLE",
+        "description": "Amount of unloading before triggering TOA subphase during walking.",
+        "min":0,
+        "max": 100,
+        "default": 0,
+        "number of steps": 5,
+        "unit": "%"
+      },
+      {
+        "name": "init_STF_ang", 
+        "name_bionics": "POWER_KNEE_STANCE_FLEXION_LEVEL",
+        "min": 0,
+        "max": 100,
+        "default": 50,
+        "number of steps": 5,
+        "unit": "rad"
+      }
+
+    ],
+    "base_folder_path": "ossur/DC_04_26/",
+    "log_time_per_session_sec": 30,
+    "log_premature_time_per_session_sec": 30,
+    "treadmill_speed": 0.5,
+    "mass": 78,
+    "loadcell_threshold": 30,
+    "num_skip_gait_cycles": 0,
+    "min_timesteps_per_gait_cycle":0
+}
+  

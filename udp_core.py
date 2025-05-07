@@ -15,7 +15,7 @@ log_file = 'test.csv'
 SENSOR_DATA = [
     ('TIME_SYSTEM_ON', '<I'),
     ('GAIT_PHASE', '<B'),  # ('ACTIVITY', '<I'),
-    ('GAIT_SUBPHASE', '<B'),  # Special handling for uint8_t
+    ('GAIT_SUBPHASE', '<B'),  # Special handling for uint8_t:     SUBPHASE_FORCE_REJECTION, SUBPHASE_TOE_OFF_ASSIST, SUBPHASE_BUMPER_AVOIDANCE, SUBPHASE_FORCE_FOLLOWING, SUBPHASE_BRAKE
     ('ACTUATOR_POSITION', '<f'),
     ('TORQUE_ESTIMATE', '<f'),
     ('ACTUATOR_SETPOINT', '<f'),
