@@ -292,6 +292,8 @@ def plot_leg_realtime():
 
                         print(f"max_knee_angle: {max_knee.data[0]}, prev_shank_angle: {max_knee.data[1]}")
                         plotter.add_prev_positions(max_knee.data[0], max_knee.data[1], color = 'grey', alpha = 0.5)
+                        max_knee.max_value = - np.inf
+                        max_knee.data = None
                         # pass
                         reset = True
 
@@ -299,6 +301,7 @@ def plot_leg_realtime():
 
                     
                     buffer = bytearray()
+                    
        
 
         except KeyboardInterrupt:
