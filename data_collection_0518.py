@@ -1,0 +1,49 @@
+import numpy as np
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__))) # 
+from udp_core import *
+
+# import lspi 
+import time
+import os
+from ui import *
+import json
+def main():
+    cfg = get_json_data("experiments/DC_05_18.json")
+    base_folder = cfg["base_folder_path"]
+    os.makedirs(base_folder, exist_ok=True)
+
+    while True:
+        # SWF target angle (40-75), Swing init (0-100), Init STF Angle (0-100)
+        # comb = [72,59,58]
+        # comb = [72,59, 68] # 68 seems to be the best STF angle
+        # comb = [72,59,78] # 78 trip with 59
+        # comb = [72, 69, 78] # 69 compatible wth 78
+        # comb = [62, 69, 78] # ming is not fan of it, end it early
+        # comb = [67, 59, 58] # comfortable (is it 69, 78 or 59, 58?? check the history)
+        # comb = [62, 59, 58] # see chart
+        # comb = [62, 59, 68] # see chart
+        # comb = [62, 69, 68] # 5 sec 
+        # comb = [62, 79, 68] # comfortable
+        # comb = [67, 69, 78] # good clearance, brake obvious
+        comb = [67, 59, 68]
+        # comb = [67, 59, 78] # good clearance, brake obvious
+
+
+
+
+        print(f"experiment with control variables {[ctrl_var['name'] for ctrl_var in cfg['control_variables']]} = {comb}")
+        
+
+        log_file = os.path.join(base_folder, "_".join(str(int(comb[i])) for i in range(len(comb)))+".csv")
+        print("save file to", log_file) 
+        
+        monitor_and_log_serial(log_file=log_file, log_time = cfg["log_time_per_session_sec"], log_premature=0, printlog = True)
+
+
+if __name__ == "__main__":
+    main()
+    
+

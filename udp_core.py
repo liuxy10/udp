@@ -106,7 +106,7 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     # print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
-                        log_entry = ', '.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                        log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
                         print(log_entry)
                         if printlog: 
                             diff = get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]) + packet["SHANK_ANGLE"]

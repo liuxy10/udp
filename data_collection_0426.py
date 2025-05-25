@@ -1,4 +1,7 @@
 import numpy as np
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__))) # 
 from udp_core import *
 # import lspi 
 import time
@@ -29,12 +32,8 @@ def main():
         
         monitor_and_log_serial(log_file=log_file, log_time = cfg["log_time_per_session_sec"], log_premature=0, printlog = True)
 
-    
-
-
-
-    
 
 if __name__ == "__main__":
     main()
     
+
