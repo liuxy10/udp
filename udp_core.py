@@ -103,7 +103,7 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
 
                 # If a start byte is found and we have a full packet, process it.
                 if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
-                    # print('buffer size', len(buffer))
+                    print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
                         log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)

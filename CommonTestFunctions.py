@@ -96,7 +96,7 @@ def set_output_torque(wireless, value):
     return  wireless.emulate_variable(Emulation.EMULATE_SYS_OUTPUT_TORQUE, value)
 
 
-# Set Reactive AI Emulation =
+# Set Reactive AI Emulation 
 def set_phase(wireless, value):
     return  wireless.emulate_variable(Emulation.EMULATE_REACTIVE_AI_CURRENT_ACTIVE_PHASE, value)
 def set_subphase(wireless, value):
@@ -173,11 +173,11 @@ def set_profile_id(wireless, value):
     wireless.set_variable(wireless.bionics.var_power_knee_profile_id, value)
 def set_vibration_intensity(wireless, value):
     wireless.set_variable(wireless.bionics.var_base_feedback_vibration_intensity, value)
-def set_stance_flexion_level(wireless, value):
+def set_stance_flexion_level(wireless, value): # initial stance flexion level
     wireless.set_variable(wireless.bionics.var_power_knee_stance_flexion_level, value)
-def set_toa_torque_level(wireless, value):
+def set_toa_torque_level(wireless, value): # ?? --> replaced by swing initiation
     wireless.set_variable(wireless.bionics.var_power_knee_toa_torque_level, value)
-def set_swing_flexion_angle(wireless, value):
+def set_swing_flexion_angle(wireless, value): # target flexion angle
     wireless.set_variable(wireless.bionics.var_power_knee_max_swing_flexion_angle_walking, value)
 def set_walking_speed(wireless, value):
     wireless.set_variable(wireless.bionics.var_power_knee_fa_fp_walking_speed, value)
@@ -468,31 +468,37 @@ if __name__ == '__main__':
     ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
     bionics_json_path = ROOT / "bionics.json"
     var_name_json_path = ROOT /"var_names.json"
-    wireless = wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
+    wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
     # test all functions under # Set Reactive AI Emulation 
-    print(set_phase(wireless, 1))
-    print(set_subphase(wireless, 2))
-    print(set_activity(wireless, 3))
-    print(set_torque(wireless, 4))
-    print(set_knee_velocity(wireless, 5))
-    print(set_knee_motor_velocity(wireless, 6))
-    print(set_thigh_angle(wireless, 7))
-    print(set_shank_angle(wireless, 8))
-    print(set_knee_angle(wireless, 9))
-    print(set_knee_motor_angle(wireless, 10))
-    print(set_sagital_plane_offset_angle(wireless, 11))
-    print(set_max_y_pos_in_window(wireless, 12))
-    print(set_control_mode(wireless, 13))
-    print(set_load_cell(wireless, 14))
-    print(set_cadence(wireless, 15))
-    print(set_toe_off_unload_point_found(wireless, 16))
-    print(set_ct_knee_angle(wireless, 17))
-    print(set_shank_rot_velocity(wireless, 18))
-    print(set_thigh_rot_velocity(wireless, 19))
-    print(set_brake_reached(wireless, 20))
-    print(set_drift_status(wireless, 21))
-    print(set_step_section(wireless, 22))
-    print(set_toe_load(wireless, 23))
-    print(set_dif_atan_grav(wireless, 24))
+    print("Testing Reactive AI Emulation Functions")
+    # reset_user_parameters(wireless)
+    set_stance_flexion_level(wireless, 45)# initial stance flexion level
+    set_toa_torque_level(wireless, 30) # ?? --> replaced by swing initiation
+    set_swing_flexion_angle(wireless, 30) # target flexion angle
+    wireless.set_variable(wireless.bionics.var_knee_swing_initiation_moment_point , 5)
+    # print(set_phase(wireless, 1))
+    # print(set_subphase(wireless, 2))
+    # print(set_activity(wireless, 3))
+    # print(set_torque(wireless, 4))
+    # print(set_knee_velocity(wireless, 5))
+    # print(set_knee_motor_velocity(wireless, 6))
+    # print(set_thigh_angle(wireless, 7))
+    # print(set_shank_angle(wireless, 8))
+    # print(set_knee_angle(wireless, 9))
+    # print(set_knee_motor_angle(wireless, 10))
+    # print(set_sagital_plane_offset_angle(wireless, 11))
+    # print(set_max_y_pos_in_window(wireless, 12))
+    # print(set_control_mode(wireless, 13))
+    # print(set_load_cell(wireless, 14))
+    # print(set_cadence(wireless, 15))
+    # print(set_toe_off_unload_point_found(wireless, 16))
+    # print(set_ct_knee_angle(wireless, 17))
+    # print(set_shank_rot_velocity(wireless, 18))
+    # print(set_thigh_rot_velocity(wireless, 19))
+    # print(set_brake_reached(wireless, 20))
+    # print(set_drift_status(wireless, 21))
+    # print(set_step_section(wireless, 22))
+    # print(set_toe_load(wireless, 23))
+    # print(set_dif_atan_grav(wireless, 24))
 
     
