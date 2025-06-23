@@ -1,0 +1,147 @@
+initializing feature extraction...
+Monitoring /dev/cu.usbserial-ABSCHWQ0 at 460800 baud. Press Ctrl+C to exit. Saving data to <_io.TextIOWrapper name='/Users/xinyi/Documents/GitHub/lspi/lspi-python/udp/ossur/adaptive_LQR/log_20250622_222347.csv' mode='w' encoding='UTF-8'>.
+Invalid value for GRAVITY_VECTOR_Z: 9.284654426510648e+24. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 1410396273. Skipping this whole packet.
+gait subphase
+ 3.00 ┼                                     ╭─────────────────────────────────╮
+ 2.40 ┤                                     │                                 │
+ 1.80 ┤                                     │                                 │
+ 1.20 ┤                                     │                                 │
+ 0.60 ┤                                     │                                 │
+ 0.00 ┼─────────────────────────────────────╯                                 ╰
+load cell
+150.75 ┼ ╭─────────────────╮
+129.48 ┼─╯                 ╰───╮
+108.21 ┤                       ╰─╮
+86.94 ┤                         ╰──╮
+65.66 ┤                            ╰───╮                                 ╭─
+44.39 ┤                                ╰─────────────────────────────────╯
+23.12 ┤
+knee angle
+33.60 ┤
+31.63 ┤                                           ╭──────╮
+29.67 ┤                                         ╭─╯      ╰─╮
+27.70 ┤                                        ╭╯          ╰──╮
+25.73 ┤                                      ╭─╯              ╰─╮
+23.77 ┤                                  ╭───╯                  ╰──╮
+21.80 ┼──────────────────────────────────╯                         ╰───────
+his idx: 1, state: [0.50684932 0.         0.26086957], action: [0. 0. 0.], action taken: [0. 0. 0.], done: False
+Invalid value for TIME_SYSTEM_ON: 605115408. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 1410396273. Skipping this whole packet.
+gait subphase
+ 3.00 ┼                                         ╭─────────────────────────────────╮
+ 2.40 ┤                                         │                                 │
+ 1.80 ┤                                         │                                 │
+ 1.20 ┤                                         │                                 │
+ 0.60 ┤                                         │                                 │
+ 0.00 ┼─────────────────────────────────────────╯                                 ╰
+load cell
+138.29 ┼              ╭──────────────╮
+119.02 ┤      ╭───────╯              ╰─╮
+99.75 ┤╭─────╯                        ╰─╮
+80.47 ┼╯                                ╰╮
+61.20 ┤                                  ╰───╮                             ╭───
+41.93 ┤                                      ╰─────────────────────────────╯
+22.65 ┤
+knee angle
+38.33 ┤                                                  ╭──╮
+35.57 ┤                                               ╭──╯  ╰──╮
+32.81 ┤                                             ╭─╯        ╰─╮
+30.05 ┤                                           ╭─╯            ╰──╮
+27.29 ┤                                         ╭─╯                 ╰─╮
+24.54 ┼─────────────────────────────────────────╯                     ╰────────
+21.78 ┤
+his idx: 2, state: [0.53246753 0.         0.        ], action: [0. 0. 0.], action taken: [0. 0. 0.], done: False
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 205602123. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 272701194. Skipping this whole packet.
+gait subphase
+ 3.00 ┼                                                           ╭──────────────────────────────╮
+ 2.40 ┤                                                           │                              │
+ 1.80 ┤                                                           │                              │
+ 1.20 ┤                                                           │                              │
+ 0.60 ┤                                                           │                              │
+ 0.00 ┼───────────────────────────────────────────────────────────╯                              ╰
+load cell
+153.41 ┼            ╭──────────────────────╮
+131.51 ┤        ╭───╯                      ╰──╮
+109.62 ┤ ╭──────╯                             ╰─╮
+87.72 ┼─╯                                      ╰──╮
+65.83 ┤                                           ╰───╮                                     ╭─
+43.94 ┤                                               ╰─────────────────────────────────────╯
+22.04 ┤
+knee angle
+27.99 ┤                                                                ╭╮
+26.96 ┤                                                              ╭─╯╰─╮
+25.93 ┤                                                            ╭─╯    ╰─╮
+24.89 ┤                                                           ╭╯        ╰╮          ╭╮
+23.86 ┤                                               ╭───────────╯          ╰╮     ╭───╯╰────
+22.82 ┼───────────────────────────────────────────────╯                       ╰─────╯
+21.79 ┤
+his idx: 3, state: [0.64130435 0.         0.39772727], action: [0. 0. 0.], action taken: [0. 0. 0.], done: False
+Invalid value for TIME_SYSTEM_ON: 4081167011. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 605115408. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 605115408. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 605115408. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 175842321. Skipping this whole packet.
+gait subphase
+ 3.00 ┼                                          ╭───────────────────────────────╮
+ 2.40 ┤                                          │                               │
+ 1.80 ┤                                          │                               │
+ 1.20 ┤                                          │                               │
+ 0.60 ┤                                          │                               │
+ 0.00 ┼──────────────────────────────────────────╯                               ╰
+load cell
+149.77 ┼           ╭────────────────╮
+128.45 ┤      ╭────╯                ╰──╮
+107.12 ┤ ╭────╯                        ╰╮
+85.80 ┼─╯                              ╰─╮
+64.48 ┤                                  ╰───╮
+43.15 ┤                                      ╰────────────────────────────────
+21.83 ┤
+knee angle
+40.42 ┤                                                ╭────╮
+37.30 ┤                                             ╭──╯    ╰─╮
+34.18 ┤                                           ╭─╯         ╰─╮
+31.07 ┤                                         ╭─╯             ╰╮
+27.95 ┤     ╭───────────────────────────────────╯                ╰─╮      ╭───
+24.83 ┼─────╯                                                      ╰──────╯
+21.72 ┤
+his idx: 4, state: [0.55263158 0.         0.        ], action: [0. 0. 0.], action taken: [0. 0. 0.], done: False
+Invalid value for TIME_SYSTEM_ON: 175907857. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 1410396273. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 605115408. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for GRAVITY_VECTOR_X: 2161752066228224.0. Skipping this whole packet.
+gait subphase
+ 3.00 ┼                                                     ╭─────────────────────────────────────────╮
+ 2.40 ┤                                                     │                                         │
+ 1.80 ┤                                                     │                                         │
+ 1.20 ┤                                                     │                                         │
+ 0.60 ┤                                                     │                                         │
+ 0.00 ┼─────────────────────────────────────────────────────╯                                         ╰
+load cell
+150.03 ┼                    ╭──────────────────╮
+128.67 ┤              ╭─────╯                  ╰─╮
+107.31 ┤       ╭──────╯                          ╰─╮
+85.96 ┤  ╭────╯                                   ╰─╮
+64.60 ┼──╯                                          ╰───╮                                         ╭
+43.24 ┤                                                 ╰─────────────────────────────────────────╯
+21.88 ┤
+knee angle
+44.54 ┤                                                              ╭────╮
+40.74 ┤                                                            ╭─╯    ╰──╮
+36.94 ┤                                                          ╭─╯         ╰──╮
+33.14 ┤                                                        ╭─╯              ╰─╮
+29.34 ┤          ╭─────────────────────────────────────────────╯                  ╰──╮
+25.54 ┼──────────╯                                                                   ╰─────────────
+21.74 ┤
+his idx: 5, state: [0.54639175 0.         0.04301075], action: [0. 0. 0.], action taken: [0. 0. 0.], done: False
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 1410396273. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 1410396273. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 290722032. Skipping this whole packet.
+Invalid value for TIME_SYSTEM_ON: 176170001. Skipping this whole packet.

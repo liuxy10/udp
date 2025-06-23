@@ -221,8 +221,6 @@ def plot_leg_realtime():
     listener.start()
 
     # visualization:
-    
-    
     prev_knee_angle = running_state(1)#20)
     prev_shank_angle = running_state(1)#20)
     start_time =  time.time()

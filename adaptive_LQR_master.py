@@ -9,6 +9,8 @@ from CommonTestFunctions import set_stance_flexion_level, set_toa_torque_level, 
 import pathlib 
 import os 
 import asciichartpy as acp
+import sys
+
 
 def addSample(his, state, action, done, x_d):
     """ Add a sample to the history """
@@ -23,7 +25,10 @@ def popFirstNSamples(his, n):
     n = min(n, len(his["current_state"]))
     return {k: v[n:] for k, v in his.items()}
 
-def feature_selection_per_gait(dat): # for one gait cycle
+def feature_selection_per_gait(dat, vis): # for one gait cycle
+    dat = smooth_data(dat, window_size=5, names = ["LOADCELL", "ACTUATOR_POSITION"]) # smooth the data
+    if vis: 
+        vis_gait_cycle_terminal(dat)
     # print(f"Extracting features from gait cycle...")
     # Find the timing (index) of the transition from 0 to 1 in "GAIT_SUBPHASE"
     gait_subphase = np.array(dat["GAIT_SUBPHASE"])
@@ -65,17 +70,18 @@ def set_user_parameters(wireless, action):
 
             if get_stance_flexion_level(wireless) == c1 and get_swing_flexion_angle(wireless) == c2 and get_toa_torque_level(wireless) == c3:
                 print("successfully update user parameters from ", np.array([c1_, c2_, c3_]), " to ", np.array([c1, c2, c3]))
+                os.system("afplay /System/Library/Sounds/Basso.aiff") # play a sound to indicate update of user parameters, "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", and "Tink"
                 break
         except Exception as e:
             print(f"Error setting user parameters: {e}")
             time.sleep(0.1)
 
-    return np.array([c1 - c1_, c2 - c2_, c3 - c3_])  # return the change in parameters
+    return np.array([c1 - c1_, c2 - c2_, c3 - c3_]), {"stance_flexion_level": c1, "swing_flexion_angle": c2, "toa_torque_level": c3}  # return the change in parameters
 
-def vis_gait_cycle_terminal(his, traj_buffer):
+def vis_gait_cycle_terminal(traj_buffer):
     # clear the terminal 
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"gait cycle # {len(his['action'])}, traj buffer size: {len(traj_buffer['GAIT_PHASE'])}")
+    # os.system('cls' if os.name == 'nt' else 'clear')
+    # print(f"gait cycle # {len(his['action'])}, traj buffer size: {len(traj_buffer['GAIT_PHASE'])}")
     print("gait subphase")
     print(acp.plot(np.array(traj_buffer["GAIT_SUBPHASE"]), {'height': 5, 'format': '{:5.2f}'}) )
     print("load cell")
@@ -83,8 +89,15 @@ def vis_gait_cycle_terminal(his, traj_buffer):
     print("knee angle")
     print(acp.plot(np.array(traj_buffer["ACTUATOR_POSITION"]), {'height': 5, 'format': '{:5.2f}'}) )
 
+def smooth_data(data, window_size=5, names = ["LOADCELL", "ACTUATOR_POSITION"]):
+    """ Smooth the data using a simple moving average"""
+    for name in names:
+        if name in data.keys():
+            data[name] = np.convolve(data[name], np.ones(window_size)/window_size, mode='valid')
+    return data
 
-def monitor_and_feature_extraction(wireless, x_d = np.array([0,0,0]), vis = False):
+def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]), vis = False):
+    
     # set_activity(wireless, 0) # set activity to 0 (level ground walking )
     print("initializing feature extraction...")
     his = {"current_state": [],  # history of current state
@@ -97,13 +110,24 @@ def monitor_and_feature_extraction(wireless, x_d = np.array([0,0,0]), vis = Fals
                      "LOADCELL": [],
                      "ACTUATOR_POSITION":[]
     }
-
+    # user parameters
+    params = {"stance_flexion_level": get_stance_flexion_level(wireless), "swing_flexion_angle": get_swing_flexion_angle(wireless), "toa_torque_level": get_toa_torque_level(wireless)} 
+    state_buffer = []
+    # define the dynamics to be x (k+1) = x(k) + A u(k) + w(k). 
     A_est = np.random.rand(3, 3)  # Example A matrix for state transition
     Qs = np.eye(3) * 0.1 # State cost matrix
     Rs = np.eye(3) * 0.01 # Action cost matrix
     # Open the serial port and log file
-    with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser:
-        print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit.")
+    with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
+        print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
+        log_file.write(
+            ','.join(name for name, _ in SENSOR_DATA) +
+            ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) +
+            ',' + ','.join(["st_sw_phase", "brake_time","min_knee_position_phase_st"]) +
+            ',' + ','.join(["stage_cost", "done"]) +
+            "\n"
+        )  # Write header
+        
         buffer = bytearray()
         # try:
         while True:
@@ -123,26 +147,28 @@ def monitor_and_feature_extraction(wireless, x_d = np.array([0,0,0]), vis = Fals
                     for name in traj_buffer.keys():
                         traj_buffer[name].append(packet[name])
 
-                    if np.array(traj_buffer["GAIT_PHASE"])[-1] == 0 and len(traj_buffer["GAIT_PHASE"]) > 30: # actual gait phase change or pseudo
-                    # if len(traj_buffer["GAIT_PHASE"]) > 100: # pseudo TODO: switch to actual 
-                        if vis: 
-                            vis_gait_cycle_terminal(his, traj_buffer)
-                        # print(f"traj buffer: {traj_buffer}")
-                        # extract features
-                        st_sw_phase, brake_time, min_knee_position_phase_st = feature_selection_per_gait(traj_buffer)
-                        state = np.array([st_sw_phase, brake_time, min_knee_position_phase_st])
-                        try: 
-                            K_est, _,_ = ct.lqr(np.eye(3),A_est, Qs, Rs)
-                        except:
-                            K_est = np.random.rand(3,3)
-                        action = - 2 * np.inner(state, K_est) # compute the optimal action with the estimated system matrix
-                        action_taken = set_user_parameters(wireless, action) # set the user parameters
+                    # for each gait cycle
+                    if np.array(traj_buffer["GAIT_PHASE"])[-1] == 0 and np.all(np.array(traj_buffer["GAIT_PHASE"])[-min(10, len(traj_buffer["GAIT_SUBPHASE"])):-1] )== 1 and len(traj_buffer["GAIT_PHASE"]) > 50: # actual gait phase change or pseudo
+                    # if len(traj_buffer["GAIT_PHASE"]) > 100: # pseudo: after 100 timestamps TODO: switch to actual 
                         
-                    
-                        ###################################################
+                        # extract features for each gait cycle
+                        st_sw_phase, brake_time, min_knee_position_phase_st = feature_selection_per_gait(traj_buffer, vis = vis)
+                        state = np.array([st_sw_phase, brake_time, min_knee_position_phase_st])
+                        #################### update the action after 10 gait cycles: 1 per 4 gait cycles ######################
+                        if len(his["current_state"]) > 10 and (len(his["current_state"])+1) % 4 == 0: # only start updating the model after the first few gait cycles
+                            try: 
+                                K_est, _,_ = ct.lqr(np.eye(3),A_est, Qs, Rs)
+                            except:
+                                K_est = np.random.rand(3,3)
+                            action = - 2 * np.inner(state, K_est) # compute the optimal action with the estimated system matrix
+                            action_taken, params = set_user_parameters(wireless, action) # set the user parameters
+                        else:
+                            action = np.zeros(3)
+                            action_taken = np.zeros(3) # no action taken in the first few gait cycles    
+                        ###################### Evaluation of convergence after 30 initial gait cycles, and every 10 gait cycles after that ######################
                         if len(his["action"]) >= 10:
                             conv = np.max(np.abs(np.array(his["current_state"])[-min(5, len(his["current_state"])-1):] - x_d)) < 0.1 # the last 5 samples are within the bound
-                            done = conv or len(his["current_state"]) > 30 # if converged or the history is 
+                            done = conv or len(his["current_state"]) > 50 # if converged or the history is 
                         else:
                             conv = False
                             done = False
@@ -151,19 +177,37 @@ def monitor_and_feature_extraction(wireless, x_d = np.array([0,0,0]), vis = Fals
                         print(f"his idx: {len(his['action'])}, state: {state}, action: {action}, action taken: {action_taken}, done: {done}")
                         if conv: # if converge
                             print(f"Converged at index {len(his['action'])}, state: {state}, action: {action}")
+                            os.system("afplay /System/Library/Sounds/Glass.aiff") # play a sound to indicate convergence
                             break # exit the WHOLE loop
-                           
-                        elif done: # if not converge but done
-                            A_est = np.linalg.lstsq(np.array(his["current_state"]), np.array(his["action"]), rcond=None)[0]  # Estimate the system matrix A
+                    
+                        if done: # successfully converge or numbers of steps reached
+                            print(f"Done at index {len(his['action'])}, state: {state}, action: {action}")
+                            os.system("afplay /System/Library/Sounds/Pop.aiff") # play
+                            break
+
+                        if (len(his["action"]) + 1) % 15 == 0: # if not converge but done 
+                            os.system("afplay /System/Library/Sounds/Funk.aiff") # play a sound to indicate A updating
+                            # use least square on the F-norm of 
+                            state_diff = np.diff(np.array(his["current_state"]),1, axis = 0)
+                            assert state_diff.shape[0] == len(his["action"]) - 1, "State error stack length does not match action length, instead, got {} and {}".format(state_diff.shape[0], len(his["action"]) - 1)
+                            assert state_diff.shape[1] == 3, "State error stack shape is not correct, instead, got {}".format(state_diff.shape)
+                            A_est = np.linalg.lstsq(state_diff, np.array(his["action"])[:-1], rcond=None)[0]  # Estimate the system matrix A
                             print(f"Estimated A matrix: \n {A_est}, and collect another few samples")
                             his =  popFirstNSamples(his, 10)  # pop the first 10 samples
-
 
                         # reset a new trajectory buffer
                         # print("reset traj buffer")
                         for k in traj_buffer.keys():
-                            traj_buffer[k] = [packet[name]] 
-
+                            traj_buffer[k] = [packet[k]] 
+                    if len(his["action"]) > 0: 
+                        # log the data to the file
+                        log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                        log_entry += ',' + ','.join(f"{params[k]}" for k in ["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"])
+                        log_entry += ',' + ','.join(f"{his['current_state'][-1][i]}" for i in range(len(state)))  # add the state
+                        log_entry += ',' + ','.join(f"{his[k][-1]:.8f}" for k in ["stage_cost", "done"])
+                        # print(log_entry)
+                        log_file.write(log_entry + "\n")
+                        log_file.flush()
                     buffer = bytearray()  # Reset the buffer      
                 else: 
                     buffer = bytearray()  # Reset the buffer
@@ -180,12 +224,14 @@ def monitor_and_feature_extraction(wireless, x_d = np.array([0,0,0]), vis = Fals
 
 
 if __name__ == "__main__":
-
+    os.system('cls' if os.name == 'nt' else 'clear')
     ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
     bionics_json_path = ROOT / "bionics.json"
     var_name_json_path = ROOT /"var_names.json"
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
-    
+    save_folder = ROOT / "ossur" / "adaptive_LQR"
+    if not save_folder.exists():
+        save_folder.mkdir(parents=True, exist_ok=True)
     # test 
     set_stance_flexion_level(wireless, 59)# initial stance flexion level
     set_toa_torque_level(wireless, 50) # ?? --> replaced by swing initiation
@@ -195,5 +241,8 @@ if __name__ == "__main__":
     print("DEFAULT max flexion angle", get_swing_flexion_angle(wireless))
     print("DEFAULT swing initiation", get_toa_torque_level(wireless))
 
-    
-    monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]))
+    time_stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
+
+    # Rerun the main logic to capture output
+    monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")

@@ -103,16 +103,18 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
 
                 # If a start byte is found and we have a full packet, process it.
                 if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
-                    print('buffer size', len(buffer))
+                    # print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
-                        log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
-                        print(log_entry)
                         if printlog: 
                             diff = get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]) + packet["SHANK_ANGLE"]
                             # print("calculated shank angle = ", cal)
                             # print(f"diff in shank = {diff:.8f}")
-                            print(get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]), - packet["SHANK_ANGLE"])
+                            # print(get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]), - packet["SHANK_ANGLE"])
+                        
+                        # log the data
+                        log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                        # print(log_entry)
                         log_file.write(log_entry + "\n")
                         log_file.flush()
                         buffer = bytearray()  # Reset the buffer
