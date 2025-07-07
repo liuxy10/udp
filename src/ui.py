@@ -2,18 +2,16 @@ import json
 import logging
 import os
 import pathlib
-import statistics
 import time
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
-try: # If running from the ros ws directory
-    from .CommonTestFunctions import *
-    from .plot_real_time import * 
-    from .tcpClient import ProstheticKneeTester
-except: # if running solely from the src directory
-    from CommonTestFunctions import *
-    from udp.plot_real_time import *
-    from tcpClient import ProstheticKneeTester
+
+from connection.device import *
+from plot_real_time import *
+from connection.tcp import ProstheticKneeTester
 
 import tkinter as tk
 from tkinter import ttk
@@ -50,7 +48,7 @@ class ProstheticKneeUI:
         self.tester = tester
         self.exp_name = exp_name
         self.col_name = col_name
-        self.exp_log_path = pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "exp_logs"/ "11_11_2024"
+        self.exp_log_path = pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "logs" / "11_11_2024"
         self.exp_json_path = self.exp_log_path/pathlib.Path(self.exp_name + ".json")
         
         self.var_names = self.tester.get_default_rt_var(col_name, state_appended = False)

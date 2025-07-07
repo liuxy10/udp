@@ -8,11 +8,11 @@ import time
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 try: # If running from the ros ws directory
-    from .CommonTestFunctions import *
-    from .plot_real_time import * 
+    from .device import *
+    from ..plot_real_time import * 
 except: # if running solely from the src directory
-    from CommonTestFunctions import *
-    from udp.plot_real_time import *
+    from device import *
+    from ..plot_real_time import *
 
 import tkinter as tk
 from tkinter import ttk
@@ -43,9 +43,11 @@ class ProstheticKneeTester:
     """
 
     def __init__(self, import_protocol = True):
-        self.ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-        self.bionics_json_path = self.ROOT / "bionics.json"
-        self.var_name_json_path = self.ROOT /"var_names.json"
+
+        BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ENV_DIR = BASE_DIR / "env"
+        self.bionics_json_path = ENV_DIR / "bionics.json"
+        self.var_name_json_path = ENV_DIR / "var_names.json"
 
         self._default_json_data = self.get_default_user_params_data()
         if import_protocol:

@@ -1,5 +1,8 @@
-from CommonTestDefinitions import *
-from CommonTestFunctions import *
+
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..','src')))
+from connection.device import *
 
 def verify_change_stance_flexion_level(wireless):
     set_activity            (wireless, value=Activity.ACTIVITY_FUMBLING_AROUND)

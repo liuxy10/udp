@@ -1,13 +1,12 @@
 import numpy as np
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__))) # 
-from udp_core import *
-# import lspi 
+import os, sys
 import time
-import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from connection.udp import *
 from ui import *
-import json
+
+
 def main():
     cfg = get_json_data("DC_04_07.json")
     base_folder = cfg["base_folder_path"]

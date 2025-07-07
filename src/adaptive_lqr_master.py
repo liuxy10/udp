@@ -1,15 +1,17 @@
 
-from udp_core import * 
 import time
 import serial
 import numpy as np
 import control as ct
-from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
-from CommonTestFunctions import set_stance_flexion_level, set_toa_torque_level, set_swing_flexion_angle, set_activity, get_stance_flexion_level, get_toa_torque_level, get_swing_flexion_angle
 import pathlib 
-import os 
+import os, sys
+
 import asciichartpy as acp
-import sys
+from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+from connection.device import *
+from connection.udp import *
 
 
 def addSample(his, state, action, done, x_d):
@@ -252,11 +254,14 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
 
 if __name__ == "__main__":
     os.system('cls' if os.name == 'nt' else 'clear')
-    ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-    bionics_json_path = ROOT / "bionics.json"
-    var_name_json_path = ROOT /"var_names.json"
+    
+    BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ENV_DIR = BASE_DIR / "env"
+    bionics_json_path = ENV_DIR / "bionics.json"
+    var_name_json_path = ENV_DIR / "var_names.json"
+
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
-    save_folder = ROOT / "ossur" / "adaptive_LQR"
+    save_folder = BASE_DIR / "ossur" / "adaptive_LQR"
     if not save_folder.exists():
         save_folder.mkdir(parents=True, exist_ok=True)
     # test 

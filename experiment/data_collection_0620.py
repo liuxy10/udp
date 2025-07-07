@@ -1,13 +1,10 @@
 import numpy as np
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__))) # 
-from udp_core import *
-# import lspi 
-import os
-from ui import *
-from CommonTestFunctions import set_stance_flexion_level, set_swing_flexion_angle, set_toa_torque_level, get_stance_flexion_level, get_swing_flexion_angle, get_toa_torque_level    
-### changes 
+
+from src.connection.udp import *
+from src.connection.device import set_stance_flexion_level, set_swing_flexion_angle, set_toa_torque_level, get_stance_flexion_level, get_swing_flexion_angle, get_toa_torque_level
+from src.ui import *
+
 
 def set_control_variables(wireless, params):
     """Set control variables for the wireless device."""
@@ -29,9 +26,11 @@ def set_control_variables(wireless, params):
             time.sleep(0.1)
 
 def main():
-    ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-    bionics_json_path = ROOT / "bionics.json"
-    var_name_json_path = ROOT /"var_names.json"
+    BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ENV_DIR = BASE_DIR / "env"
+    bionics_json_path = ENV_DIR / "bionics.json"
+    var_name_json_path = ENV_DIR / "var_names.json"
+
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
     
     cfg = get_json_data("experiments/DC_06_20.json")

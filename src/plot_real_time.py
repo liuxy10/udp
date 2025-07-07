@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import serial
-from udp_core import SERIAL_PORT, BAUD_RATE, START_BYTE, PACKET_SIZE, parse_packet, get_shank_angle_from_gravity_vec_degree
 from pynput import keyboard
 import time
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+from connection.udp import SERIAL_PORT, BAUD_RATE, START_BYTE, PACKET_SIZE, parse_packet, get_shank_angle_from_gravity_vec_degree
 
 
 pause = False

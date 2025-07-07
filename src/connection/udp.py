@@ -1,15 +1,18 @@
 import serial
 import struct
 import time
+import pathlib
+import os
 
 import numpy as np
-# import keyboard
-# Constants
+
 START_BYTE = 0xAA
-PACKET_SIZE = 200  # Adjust if the total packet size is different
+PACKET_SIZE = 200
 BAUD_RATE = 460800
-SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0' # double check it in terminal: ls /dev/cu.usb*
-log_file = 'test.csv'
+SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0' # ls /dev/cu.usb*
+
+BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LOG_FILE = BASE_DIR / "logs" / f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_udp_core.csv"
 
 # Define sensor data format: (name, struct-format)
 SENSOR_DATA = [
@@ -46,7 +49,6 @@ SENSOR_ID = {
     0x4401B410: 'GRAVITY_VECTOR_Z',   # BIONICS_VAR_BASE_GRAV_VECT_Z
     0x44118930: 'SHANK_ANGLE',         # BIONICS_VAR_KNEE_JOINT_ANGLE
 }
-
 
 def parse_packet(data):
     if len(data) < PACKET_SIZE:
@@ -138,10 +140,9 @@ def get_shank_angle_from_gravity_vec_degree(gx, gy):
     return - np.arcsin(gx/np.sqrt(gx**2 + gy**2)) * 180/np.pi
 
     
-if __name__ == "__main__":
-    # Example usage
-    log_time = 10  # Set your desired log time in seconds
-    monitor_and_log_serial(log_file, log_time, printlog = True)
-    # plot_data()
+# if __name__ == "__main__":
+#     log_time = 10
+#     monitor_and_log_serial(LOG_FILE, log_time, printlog = True)
+#     # plot_data()
 
 

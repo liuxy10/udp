@@ -1,11 +1,74 @@
 
-try: 
-    from .CommonTestDefinitions import *
-except:
-    from CommonTestDefinitions import *
 import pandas as pd
 import numpy as np
 import struct
+import os
+import re
+from enum import IntEnum
+import pathlib
+BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+ENV_DIR = BASE_DIR / "env"
+ENV_DIR_RAW = str(ENV_DIR)
+TEST_DIR = BASE_DIR / "tests"
+
+# Enums
+activities          = re.findall('ACTIVITY_(?!\\w*(?:MODE))\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_TaskDeliberativeAIDef.h', 'r', encoding='latin-1').read())
+Activity            = IntEnum("Activity",       activities, start=0) # ACTIVITY_EXERCISE is 8 here but 100 in code!
+
+
+amputationTypes     = re.findall('\\bAMPUTATION_TYPE\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_TaskDeliberativeAIDef.h', 'r', encoding='latin-1').read())
+AmputationType      = IntEnum("AmputationType", amputationTypes, start=1)
+
+
+controlModes        = re.findall('\\bCONTROL_MODE\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_TaskDeliberativeAIDef.h', 'r', encoding='latin-1').read())
+ControlMode         = IntEnum("ControlMode",    controlModes, start=0)
+
+
+emulationVariables  = re.findall('EMULATE\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/b3c_emulator_config.h', 'r', encoding='latin-1').read())
+Emulation           = IntEnum("Emulation",      emulationVariables, start=0)
+
+
+hwParameters        = re.findall('\\bHW_PARAM_\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_DB_HardwareParamsDef.h', 'r', encoding='latin-1').read())
+HwParameter         = IntEnum("HwParameter",  hwParameters, start=0)
+
+
+phases              = re.findall('\\bPHASE\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_ReactiveAIDef.h', 'r', encoding='latin-1').read())
+Phase               = IntEnum("Phase",          phases, start=0)
+
+
+profileIDs          = re.findall('\\bPROFILE_ID\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_TaskDeliberativeAIDef.h', 'r', encoding='latin-1').read())
+ProfileID           = IntEnum("ProfileID",      profileIDs, start=1)
+
+
+stepSections        = re.findall('\\b(?:STANCE|SWING)_.\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_TaskDeliberativeAIDef.h', 'r', encoding='latin-1').read())
+StepSection         = IntEnum("StepSection",    stepSections, start=0)
+
+
+subphases           = re.findall('\\bSUBPHASE\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_ReactiveAIDef.h', 'r', encoding='latin-1').read())
+Subphase            = IntEnum("Subphase",       subphases, start=0)
+
+
+userParameters      = re.findall('\\bUSER_PARAM_(?!\\w*(?:DEFAULT))\\w*',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/PKM_APP_DB_UserParamsDef.h', 'r', encoding='latin-1').read())
+UserParameter       = IntEnum("UserParameter",  userParameters, start=0)
+
+
+# Sensor Input Config Array
+SInputConfigArr     = re.findall(r'{SYS.*\bSYS_INPUT(?!_CONFIG)\w+', re.findall(r'SInput((.|\n)*)};',
+                                 open(ENV_DIR_RAW + r'/pkm_app_def/b3c_input_config.cpp', 'r', encoding='latin-1').read())[0][0])
+
+
+# Plotting
+coloursForPlotting = ['#FE6100', '#648FFF', '#DC267F', '#FFB000', '#DBD56E', '#A3C9A8', '#785EF0', '#334139']
 
 
 ########## SET ##########
@@ -327,9 +390,9 @@ def reset_user_parameters(wireless):
 ########## DATABASES ##########
 # Functionality to read the databases until we have reboot functionality in the virtual platform
 def generate_database_functions():
-    databaseFunctionsFile = 'tests/verification/DatabaseFunctions.py'
-    b3cBiometricStatsDefFile = 'b3c_sw_platform/b3c_sw_def/B3C_SW_DEF_KneeBiometricStats.h'
-    pkmBiometricStatsDefFile = 'pkm_app_def/PKM_APP_DB_BiometricParamsDef.h'
+    databaseFunctionsFile = TEST_DIR / 'verification/DatabaseFunctions.py'
+    b3cBiometricStatsDefFile = ENV_DIR / 'b3c_sw_platform/b3c_sw_def/B3C_SW_DEF_KneeBiometricStats.h'
+    pkmBiometricStatsDefFile = ENV_DIR / 'pkm_app_def/PKM_APP_DB_BiometricParamsDef.h'
 
     variableSize = {'uint16_t' : ['2', 'H'], 'uint32_t' : ['4', 'I'], 'uint64_t' : ['8', 'Q'], 'float' : ['4', 'f']}
 
@@ -465,9 +528,10 @@ if __name__ == '__main__':
     import pathlib
     import os
     from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
-    ROOT = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
-    bionics_json_path = ROOT / "bionics.json"
-    var_name_json_path = ROOT /"var_names.json"
+
+    bionics_json_path = ENV_DIR / "bionics.json"
+    var_name_json_path = ENV_DIR / "var_names.json"
+
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
     # test all functions under # Set Reactive AI Emulation 
     print("Testing Reactive AI Emulation Functions")

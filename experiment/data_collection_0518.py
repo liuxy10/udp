@@ -1,15 +1,11 @@
 import numpy as np
-
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__))) # 
-from udp_core import *
 
-# import lspi 
-import time
-import os
-from ui import *
-import json
+from src.connection.udp import *
+from src.connection.device import set_stance_flexion_level, set_swing_flexion_angle, set_toa_torque_level, get_stance_flexion_level, get_swing_flexion_angle, get_toa_torque_level
+from src.ui import *
+
+
 def main():
     cfg = get_json_data("experiments/DC_05_18.json")
     base_folder = cfg["base_folder_path"]
