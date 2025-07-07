@@ -20,11 +20,28 @@ def addSample(his, state, action, done, x_d):
     his["done"].append(done)
     return his
 
-def popFirstNSamples(his, n):
+def popFirstNSamples(dict, n):
     """ Pop the first n samples from the history """
-    n = min(n, len(his["current_state"]))
-    return {k: v[n:] for k, v in his.items()}
+    first_key = next(iter(dict)) # get the first key
+    n = min(n, len(dict[first_key]))
+    return {k: v[n:] for k, v in dict.items()}
 
+def feature_selection_from_mean_traj(traj_buffer, vis = False): # for multiple gait cycles
+    """ Extract features from the trajectory buffer """
+    mean = {k: [] for k in traj_buffer.keys()}  # initialize mean dictionary
+    i = 0
+    for k in traj_buffer.keys():
+        for traj in traj_buffer[k]:
+            if len(traj) > 0: # Interpolate to handle missing or unevenly sampled data
+                traj = np.array(traj)
+                x = np.linspace(0, 1, len(traj))
+                x_uniform = np.linspace(0, 1, 100)
+                traj_interp = np.interp(x_uniform, x, traj)
+                mean[k].append(traj_interp)
+        mean[k] = np.mean(np.array(mean[k]), axis=0)  # take the mean of the trajectories
+        assert len(mean[k]) == 100, f"Mean trajectory for {k} is not of length 100, instead, got {len(mean[k])}"
+    return feature_selection_per_gait(mean, vis)  # extract features from the mean trajectory
+    
 def feature_selection_per_gait(dat, vis): # for one gait cycle
     dat = smooth_data(dat, window_size=5, names = ["LOADCELL", "ACTUATOR_POSITION"]) # smooth the data
     if vis: 
@@ -104,12 +121,14 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
            "action": [],  # history of actions
            "stage_cost": [], # history of stage cost
            "done":[]} # indicates if the parameters are at the bound
-    
-    traj_buffer = {"GAIT_PHASE": [],
-                     "GAIT_SUBPHASE": [],
-                     "LOADCELL": [],
-                     "ACTUATOR_POSITION":[]
+    traj_iter, n_traj = 0, 4
+    traj_buffer = {"GAIT_PHASE": [[] for _ in range(n_traj)],
+                     "GAIT_SUBPHASE": [[] for _ in range(n_traj)],
+                     "LOADCELL": [[] for _ in range(n_traj)],
+                     "ACTUATOR_POSITION":[[] for _ in range(n_traj)],
     }
+    
+    n_action_update= 4 # update the action every n_action_updategait cycles
     # user parameters
     params = {"stance_flexion_level": get_stance_flexion_level(wireless), "swing_flexion_angle": get_swing_flexion_angle(wireless), "toa_torque_level": get_toa_torque_level(wireless)} 
     state_buffer = []
@@ -145,20 +164,22 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
                     # check if the traj buffer is full
                     # add to traj buffer
                     for name in traj_buffer.keys():
-                        traj_buffer[name].append(packet[name])
-
+                        traj_buffer[name][traj_iter].append(packet[name])
+                    
                     # for each gait cycle
-                    if np.array(traj_buffer["GAIT_PHASE"])[-1] == 0 and np.all(np.array(traj_buffer["GAIT_PHASE"])[-min(10, len(traj_buffer["GAIT_SUBPHASE"])):-1] )== 1 and len(traj_buffer["GAIT_PHASE"]) > 50: # actual gait phase change or pseudo
-                    # if len(traj_buffer["GAIT_PHASE"]) > 100: # pseudo: after 100 timestamps TODO: switch to actual 
-                        
+                    if (np.array(traj_buffer["GAIT_PHASE"][traj_iter])[-1] == 0 and # the last gait phase is 0
+                        np.all(np.array(traj_buffer["GAIT_PHASE"][traj_iter])[-min(10, len(traj_buffer["GAIT_SUBPHASE"][traj_iter])):-1] )== 1 and # # the last 10 gait phases are all 1
+                        len(traj_buffer["GAIT_PHASE"][traj_iter]) > 50): # actual gait phase change or pseudo
+                        traj_iter += 1
                         # extract features for each gait cycle
-                        st_sw_phase, brake_time, min_knee_position_phase_st = feature_selection_per_gait(traj_buffer, vis = vis)
+                        st_sw_phase, brake_time, min_knee_position_phase_st = feature_selection_from_mean_traj(traj_buffer, vis = vis)
                         state = np.array([st_sw_phase, brake_time, min_knee_position_phase_st])
-                        #################### update the action after 10 gait cycles: 1 per 4 gait cycles ######################
-                        if len(his["current_state"]) > 10 and (len(his["current_state"])+1) % 4 == 0: # only start updating the model after the first few gait cycles
+                        #################### update the action after 10 gait cycles: 1 per n_action_updategait cycles ######################
+                        if len(his["current_state"]) > 10 and (len(his["current_state"])+1) % n_action_update == 0: # only start updating the model after the first few gait cycles
                             try: 
                                 K_est, _,_ = ct.lqr(np.eye(3),A_est, Qs, Rs)
                             except:
+                                print("LQR failed, using random K_est")
                                 K_est = np.random.rand(3,3)
                             action = - 2 * np.inner(state, K_est) # compute the optimal action with the estimated system matrix
                             action_taken, params = set_user_parameters(wireless, action) # set the user parameters
@@ -168,7 +189,7 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
                         ###################### Evaluation of convergence after 30 initial gait cycles, and every 10 gait cycles after that ######################
                         if len(his["action"]) >= 10:
                             conv = np.max(np.abs(np.array(his["current_state"])[-min(5, len(his["current_state"])-1):] - x_d)) < 0.1 # the last 5 samples are within the bound
-                            done = conv or len(his["current_state"]) > 50 # if converged or the history is 
+                            done = conv or len(his["current_state"]) > 200 # if converged or the number of samples exceeds 100
                         else:
                             conv = False
                             done = False
@@ -193,12 +214,18 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
                             assert state_diff.shape[1] == 3, "State error stack shape is not correct, instead, got {}".format(state_diff.shape)
                             A_est = np.linalg.lstsq(state_diff, np.array(his["action"])[:-1], rcond=None)[0]  # Estimate the system matrix A
                             print(f"Estimated A matrix: \n {A_est}, and collect another few samples")
-                            his =  popFirstNSamples(his, 10)  # pop the first 10 samples
+                            # his =  popFirstNSamples(his, 10)  # pop the first 10 samples
 
                         # reset a new trajectory buffer
                         # print("reset traj buffer")
-                        for k in traj_buffer.keys():
-                            traj_buffer[k] = [packet[k]] 
+                        if traj_iter >= n_traj: # if the trajectory buffer is full, reset it
+                            popFirstNSamples(traj_buffer, 1)
+                            for k in traj_buffer.keys():
+                                  # pop the first sample from each buffer
+                                traj_buffer[k].append([packet[k]])
+                            traj_iter -= 1
+                            
+
                     if len(his["action"]) > 0: 
                         # log the data to the file
                         log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
@@ -243,6 +270,8 @@ if __name__ == "__main__":
 
     time_stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
-
+    # constraint the activity to be ACTIVITY_FORWARD_PROG
+    set_activity(wireless, 1) # set activity to forward progression walking
     # Rerun the main logic to capture output
     monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
+   

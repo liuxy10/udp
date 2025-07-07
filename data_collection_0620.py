@@ -42,17 +42,30 @@ def main():
         # SWF target angle (40-75), Swing init (0-100), Init STF Angle (0-100)
         # comb = [72,59,58]
         # comb = [72,59, 68] # 68 seems to be the best STF angle
-        # comb = [72,59,78]  # 78 trip with 59
-        comb = [72, 69, 78] # 69 compatible wth 78
+        comb = [72,59,78]  # 78 trip with 59
+        # comb = [72, 69, 78] # 69 compatible wth 78
         # comb = [62, 69, 78] # ming is not fan of it, end it early, trip
-        # comb = [67, 59, 58] # comfortable (is it 69, 78 or 59, 58?? check the history)
+        comb = [67, 59, 58] # comfortable (is it 69, 78 or 59, 58?? check the history) 
         # comb = [62, 59, 58] # compared to last time slow motion, more hip complensation, maybe step length increase 
         # comb = [62, 59, 68] # trips a lot, swing ext span decrease?
         # comb = [62, 69, 68] # 5 sec. trip reduced, faster swe
         # comb = [62, 79, 68] # comfortable
         # comb = [67, 69, 78] # good clearance, brake obvious
-        # comb = [67, 59, 68]
+        # comb = [67, 59, 68] # good clearance, brake obvious 
         # comb = [67, 59, 78] # good clearance, brake obvious
+
+
+        ##### new parameters ######
+        # comb = [40,59, 68] # strong swing extension; little scuff; 
+        # comb = [40, 49, 68] # stong swing; no scuff
+        # comb = [40, 49, 40] # strong braking
+        # comb = [62, 49, 68]
+        # # comb = [40, 49, 40] # vel reduce in the middle
+        comb = [40, 100, 30] 
+        
+
+
+
         print(f"experiment with control variables {[ctrl_var['name'] for ctrl_var in cfg['control_variables']]} = {comb}")
         set_control_variables(wireless, comb)
 
