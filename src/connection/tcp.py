@@ -7,12 +7,9 @@ import time
 
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
-try: # If running from the ros ws directory
-    from .device import *
-    from ..plot_real_time import * 
-except: # if running solely from the src directory
-    from device import *
-    from ..plot_real_time import *
+# if running solely from the src directory
+from .device import *
+from ..plot_real_time import *
 
 import tkinter as tk
 from tkinter import ttk

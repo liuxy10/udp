@@ -1,6 +1,6 @@
 import numpy as np
-import os
-
+import os, sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.connection.udp import *
 from src.connection.device import set_stance_flexion_level, set_swing_flexion_angle, set_toa_torque_level, get_stance_flexion_level, get_swing_flexion_angle, get_toa_torque_level
 from src.ui import *
@@ -30,10 +30,11 @@ def main():
     ENV_DIR = BASE_DIR / "env"
     bionics_json_path = ENV_DIR / "bionics.json"
     var_name_json_path = ENV_DIR / "var_names.json"
+    DATA_DIR = pathlib.Path("ossur").expanduser()
 
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
     
-    cfg = get_json_data("experiments/DC_06_20.json")
+    cfg = get_json_data(DATA_DIR / "DC_06_20.json")
     base_folder = cfg["base_folder_path"]
     os.makedirs(base_folder, exist_ok=True)
 
@@ -44,7 +45,7 @@ def main():
         comb = [72,59,78]  # 78 trip with 59
         # comb = [72, 69, 78] # 69 compatible wth 78
         # comb = [62, 69, 78] # ming is not fan of it, end it early, trip
-        comb = [67, 59, 58] # comfortable (is it 69, 78 or 59, 58?? check the history) 
+        comb = [40, 59, 58] # comfortable (is it 69, 78 or 59, 58?? check the history) 
         # comb = [62, 59, 58] # compared to last time slow motion, more hip complensation, maybe step length increase 
         # comb = [62, 59, 68] # trips a lot, swing ext span decrease?
         # comb = [62, 69, 68] # 5 sec. trip reduced, faster swe
@@ -60,7 +61,7 @@ def main():
         # comb = [40, 49, 40] # strong braking
         # comb = [62, 49, 68]
         # # comb = [40, 49, 40] # vel reduce in the middle
-        comb = [40, 100, 30] 
+        # comb = [40, 100, 30] 
         
 
 

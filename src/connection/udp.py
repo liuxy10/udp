@@ -9,10 +9,11 @@ import numpy as np
 START_BYTE = 0xAA
 PACKET_SIZE = 200
 BAUD_RATE = 460800
-SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0' # ls /dev/cu.usb*
+SERIAL_PORT = '/dev/cu.usbserial-ABSCHWQ0' # ls /dev/cu.usb* # 'COM5' #
 
 BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_FILE = BASE_DIR / "logs" / f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_udp_core.csv"
+# os.makedirs(LOG_FILE, exist_ok=True)
 
 # Define sensor data format: (name, struct-format)
 SENSOR_DATA = [
@@ -108,15 +109,15 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                     # print('buffer size', len(buffer))
                     packet = parse_packet(buffer)
                     if packet:
-                        if printlog: 
-                            diff = get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]) + packet["SHANK_ANGLE"]
-                            # print("calculated shank angle = ", cal)
-                            # print(f"diff in shank = {diff:.8f}")
-                            # print(get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]), - packet["SHANK_ANGLE"])
+                        # if printlog: 
+                            # diff = get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]) + packet["SHANK_ANGLE"]
+                            # # print("calculated shank angle = ", cal)
+                            # # print(f"diff in shank = {diff:.8f}")
+                            # # print(get_shank_angle_from_gravity_vec_degree(packet["GRAVITY_VECTOR_X"], packet["GRAVITY_VECTOR_Y"]), - packet["SHANK_ANGLE"])
                         
                         # log the data
                         log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
-                        # print(log_entry)
+                        print(log_entry)
                         log_file.write(log_entry + "\n")
                         log_file.flush()
                         buffer = bytearray()  # Reset the buffer
@@ -140,9 +141,9 @@ def get_shank_angle_from_gravity_vec_degree(gx, gy):
     return - np.arcsin(gx/np.sqrt(gx**2 + gy**2)) * 180/np.pi
 
     
-# if __name__ == "__main__":
-#     log_time = 10
-#     monitor_and_log_serial(LOG_FILE, log_time, printlog = True)
+if __name__ == "__main__":
+    log_time = 10
+    monitor_and_log_serial(LOG_FILE, log_time, printlog = True)
 #     # plot_data()
 
 

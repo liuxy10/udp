@@ -10,9 +10,9 @@ import asciichartpy as acp
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
-from src.connection.device import *
-from src.connection.udp import *
-import time 
+from connection.device import *
+from connection.udp import *
+"""copy from adaptive_LQR_master.py, TODO refactored to be the core node of the system"""
 
 def addSample(his, state, action, done, x_d):
     """ Add a sample to the history """
@@ -116,7 +116,7 @@ def smooth_data(data, window_size=5, names = ["LOADCELL", "ACTUATOR_POSITION"]):
     return data
 
 def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]), vis = False):
-    """ Monitor the wireless device and extract features from the data """
+    
     # set_activity(wireless, 0) # set activity to 0 (level ground walking )
     print("initializing feature extraction...")
     his = {"current_state": [],  # history of current state
@@ -138,22 +138,21 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
     A_est = np.random.rand(3, 3)  # Example A matrix for state transition
     Qs = np.eye(3) * 0.1 # State cost matrix
     Rs = np.eye(3) * 0.01 # Action cost matrix
-
-    start_time = time.time()
     # Open the serial port and log file
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
         print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
         log_file.write(
-            ','.join(name for name, _ in SENSOR_DATA) + # sensor data
-            ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) + # user parameters
-            ',' + ','.join(["st_sw_phase", "brake_time","min_knee_position_phase_st"]) + # features
-            ',' + ','.join(["stage_cost", "done"]) + # stage cost and done flag
+            ','.join(name for name, _ in SENSOR_DATA) +
+            ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) +
+            ',' + ','.join(["st_sw_phase", "brake_time","min_knee_position_phase_st"]) +
+            ',' + ','.join(["stage_cost", "done"]) +
             "\n"
         )  # Write header
         
         buffer = bytearray()
         # try:
         while True:
+        
             byte = ser.read(1)
             if not byte:
                 continue
@@ -161,11 +160,10 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
             buffer.extend(byte)
             # If a start byte is found and we have a full packet, process it.
             if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
+                # print('buffer size', len(buffer))
                 packet = parse_packet(buffer)
-                
                 if packet and np.all(np.array([v for v in packet.values()]) > -1e6) and np.all(np.array([v for v in packet.values()]) < 1e6): 
                     # check if the traj buffer is full
-                    packet["TIME_PC"] = time.time() - start_time # TODO: visualize it
                     # add to traj buffer
                     for name in traj_buffer.keys():
                         traj_buffer[name][traj_iter].append(packet[name])
@@ -253,7 +251,9 @@ def monitor_and_feature_extraction(wireless, log_file,  x_d = np.array([0,0,0]),
     print("Feature extraction completed.")
 
 
-
+def adhoc_feature_extraction(log_file, vis = False):
+    """ Ad-hoc feature extraction for each gait cycles """
+    
     
 
 if __name__ == "__main__": # example usage
@@ -266,7 +266,7 @@ if __name__ == "__main__": # example usage
     DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
 
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
-    save_folder = DATA_DIR / "adaptive_LQR_0709/test"
+    save_folder = DATA_DIR / "adaptive_LQR_0709/004"
     if not save_folder.exists():
         save_folder.mkdir(parents=True, exist_ok=True)
     # test 

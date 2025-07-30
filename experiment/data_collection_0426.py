@@ -1,9 +1,9 @@
 import numpy as np
 import os, sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from connection.udp import *
-from ui import *
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.connection.udp import *
+from src.ui import *
 
 
 def main():

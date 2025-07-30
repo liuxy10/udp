@@ -1,6 +1,6 @@
 import numpy as np
-import os
-
+import os,sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.connection.udp import *
 from src.connection.device import set_stance_flexion_level, set_swing_flexion_angle, set_toa_torque_level, get_stance_flexion_level, get_swing_flexion_angle, get_toa_torque_level
 from src.ui import *

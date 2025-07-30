@@ -9,14 +9,22 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
-from connection.device import *
-from plot_real_time import *
-from connection.tcp import ProstheticKneeTester
+from .connection.device import *
+from .plot_real_time import *
+from .connection.tcp import ProstheticKneeTester
 
 import tkinter as tk
 from tkinter import ttk
 from os import makedirs
 
+"""This module provides a UI for setting values for the prosthetic knee.
+It allows users to adjust parameters such as stance flexion level, swing flexion angle, and
+swing initiation torque level.
+
+TODO: later on, we need to combine visualization and I/O control into one class"""
+
+
+DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
 
 # matplotlib.use('Agg')  # Use a non-GUI backend
 def get_json_data(path):
@@ -48,8 +56,11 @@ class ProstheticKneeUI:
         self.tester = tester
         self.exp_name = exp_name
         self.col_name = col_name
-        self.exp_log_path = pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "logs" / "11_11_2024"
-        self.exp_json_path = self.exp_log_path/pathlib.Path(self.exp_name + ".json")
+       
+
+
+        self.exp_log_path = DATA_DIR / "11_11_2024"
+        self.exp_json_path = self.exp_log_path / pathlib.Path(self.exp_name + ".json")
         
         self.var_names = self.tester.get_default_rt_var(col_name, state_appended = False)
         self.var_dict = {}
