@@ -1,0 +1,33 @@
+import os, sys, time, pathlib
+import numpy as np
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from wireless_protocol_library import WirelessProtocolLibrary, TcpCommunication
+from src.core import *
+from src.connection.device import *
+from src.connection.udp import *
+
+
+
+if __name__ == "__main__":
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ENV_DIR = BASE_DIR / "env"
+    bionics_json_path = ENV_DIR / "bionics.json"
+    var_name_json_path = ENV_DIR / "var_names.json"
+    DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
+
+    wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
+    exp_id = "OT_07_30/data" # Example path, adjust as needed
+    save_folder = DATA_DIR / exp_id
+    if not save_folder.exists():
+        save_folder.mkdir(parents=True, exist_ok=True)
+    # test 
+    set_stance_flexion_level(wireless, 50)# initial stance flexion level
+    set_toa_torque_level(wireless, 50) # ?? --> replaced by swing initiation
+    set_swing_flexion_angle(wireless, 49) # target flexion angle
+    
+    print("DEFAULT initial stance flexion",get_stance_flexion_level(wireless))
+    print("DEFAULT max flexion angle", get_swing_flexion_angle(wireless))
+    print("DEFAULT swing initiation", get_toa_torque_level(wireless))

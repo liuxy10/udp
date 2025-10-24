@@ -8,8 +8,8 @@ import time
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 # if running solely from the src directory
-from .device import *
-from ..plot_real_time import *
+from connection.device import *
+from plot_real_time import *
 
 import tkinter as tk
 from tkinter import ttk
@@ -41,7 +41,7 @@ class ProstheticKneeTester:
 
     def __init__(self, import_protocol = True):
 
-        BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         ENV_DIR = BASE_DIR / "env"
         self.bionics_json_path = ENV_DIR / "bionics.json"
         self.var_name_json_path = ENV_DIR / "var_names.json"
@@ -50,7 +50,7 @@ class ProstheticKneeTester:
         if import_protocol:
             try: 
                 self.wireless = WirelessProtocolLibrary(TcpCommunication(), self.bionics_json_path) # Time out meaning that the power knee is not connected
-            except:
+            except Exception:
                 print("NO CONNECTION TO THE POWERKNEE, if not in emulation, quit now!")
                 
     def get_default_user_params_data(self):

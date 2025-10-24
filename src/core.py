@@ -9,16 +9,129 @@ import os, sys
 import asciichartpy as acp
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # from src.connection.device import *
-from src.utils import  popFirstNSamples, set_user_parameters_batch, feature_selection_from_mean_traj
+from src.utils import  popFirstNSamples, set_user_parameters_batch
 from src.connection.udp import *
 from src.connection.device import *
 import time 
+import zmq
+import json
 
 
+def interface(wireless, log_file, in_port = '3333', out_port = '4444',
+                                ):
+    """ 
+    Monitor the wireless device, extract features, communicate via ZMQ, 
+    and receive new parameters to set on the device.
+    """
+    
+    # ZMQ Context and Sockets
+    context = zmq.Context()
+    # Socket to send messages out
+    publisher = context.socket(zmq.PUB)
+    publisher.bind(f"tcp://*:{out_port}")
+    print(f"ZMQ Publisher bound to tcp://*:{out_port}")
 
-## TODO: post hoc analysis of adaptive LQR algorithm
+    # Socket to receive messages
+    subscriber = context.socket(zmq.SUB)
+    subscriber.connect(f"tcp://localhost:{in_port}")
+    subscriber.setsockopt_string(zmq.SUBSCRIBE, "") # Subscribe to all topics
+    print(f"ZMQ Subscriber connected to tcp://localhost:{in_port}")
+
+    traj_iter = 0 # iterator of trajectory buffer
+    n_traj = 4 # max number of trajectories in the traj buffer
+    
+    traj_buffer = {
+                        "GAIT_SUBPHASE": [[] for _ in range(n_traj)],
+                        "LOADCELL": [[] for _ in range(n_traj)],
+                        "ACTUATOR_POSITION":[[] for _ in range(n_traj)],
+                        "TORQUE_ESTIMATE":[[] for _ in range(n_traj)],
+                    }
+    # his = {"param": []} # history of current state
+    
+    # user parameters from firmware 
+    params = np.array([get_stance_flexion_level(wireless), get_swing_flexion_angle(wireless), get_toa_torque_level(wireless)])
+    param_names = ["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]
+    # Open the serial port and log file
+    with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
+        print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
+        log_file.write(
+            # "TIME_PC" + ',' +# PC received time stamp
+            ','.join(name for name, _ in SENSOR_DATA) + # sensor data
+            ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) + # user parameters
+            "\n"
+        )  # Write header
+        
+        buffer = bytearray()
+        # try:
+        while True:
+            # Check for new parameters from ZMQ
+            byte = ser.read(1)
+            if not byte:
+                continue
+            buffer.extend(byte)
+            
+            if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
+                packet = parse_packet(buffer)
+                
+                if packet and np.all(np.array([v for v in packet.values()]) > -1e6) and np.all(np.array([v for v in packet.values()]) < 1e6): 
+                    # add to traj buffer
+                    for name in traj_buffer.keys():
+                        traj_buffer[name][traj_iter].append(packet[name])
+                    
+                    # for each gait cycle
+                    if (len(traj_buffer["GAIT_SUBPHASE"][traj_iter]) > 50 and
+                        np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-1] == 0 and 
+                        np.all(np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-10:-1] == 3)):
+                        
+                        traj_iter += 1
+
+                        if traj_iter >= n_traj:
+                            
+                            
+                            publisher.send_json({"trajectory": traj_buffer})
+                            traj_buffer = popFirstNSamples(traj_buffer, 1)
+                            for k in traj_buffer.keys():
+                                traj_buffer[k].append([])
+                            traj_iter -= 1
+                    
+                    # log data for each packet
+                    log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                    log_entry += ',' + ','.join(f"{p}" for p in params)
+                    log_file.write(log_entry + "\n")
+                    log_file.flush()
+                    
+                    buffer = bytearray()
+                else: 
+                    buffer = bytearray()
+                
+            # check if there are new parameters from ZMQ subscriber (non-blocking)
+            try:
+                message = subscriber.recv_json(flags=zmq.NOBLOCK)
+                if 'params' in message:
+                    print("RECEIVED")
+                    new_params = message['params']
+                    new_params = np.array([new_params.get(name, params[i]) for i, name in enumerate(param_names)], dtype=int)
+                    if not np.array_equal(new_params, params):
+                        print(f"Received new params from ZMQ: {new_params}, previous params: {params}")
+                        params = new_params
+                        set_user_parameters_batch(wireless, params[0], params[1], params[2])
+            except zmq.Again:
+                pass # No message received
+
+
+    publisher.close()
+    subscriber.close()
+    context.term()
+    print("ZMQ connections and serial port closed.")
+
+    print("Interface task completed.")
+
+
+################## OLD monitor function ##################e
+
+
 def monitor(wireless, log_file, vis = False, change = [True, True, True]):
     """ Monitor the wireless device and extract features from the data """
     
@@ -27,10 +140,10 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
 
     n_traj = 4 # max number of trajectories in the traj buffer
     n_init_gait = 10 #  initial gait cycles, where no action updates
-    n_action_update= 10 # update the action every n_action_update gait cycles
+    n_action_update= 8 # update the action every n_action_update gait cycles
    
 
-    traj_buffer = {"GAIT_PHASE": [[] for _ in range(n_traj)],
+    traj_buffer = {
                      "GAIT_SUBPHASE": [[] for _ in range(n_traj)],
                      "LOADCELL": [[] for _ in range(n_traj)],
                      "ACTUATOR_POSITION":[[] for _ in range(n_traj)],
@@ -42,13 +155,12 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
     params = np.array([get_stance_flexion_level(wireless), get_swing_flexion_angle(wireless), get_toa_torque_level(wireless)])
     change = np.array(change)
 
-    start_time = time.time()
     # Open the serial port and log file
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
         print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
         log_file.write(
-            "TIME_PC" + # PC received time stamp
-            ',' +','.join(name for name, _ in SENSOR_DATA) + # sensor data
+            # "TIME_PC" + ',' +# PC received time stamp
+            ','.join(name for name, _ in SENSOR_DATA) + # sensor data
             ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) + # user parameters
             "\n"
         )  # Write header
@@ -59,26 +171,23 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
             byte = ser.read(1)
             if not byte:
                 continue
-
             buffer.extend(byte)
             # If a start byte is found and we have a full packet, process it.
             if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
                 packet = parse_packet(buffer)
                 
                 if packet and np.all(np.array([v for v in packet.values()]) > -1e6) and np.all(np.array([v for v in packet.values()]) < 1e6): 
-                    # check if the traj buffer is full
-                    time_pc = time.time() - start_time 
+                    log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
                     # add to traj buffer
                     for name in traj_buffer.keys():
                         traj_buffer[name][traj_iter].append(packet[name])
-                    
+                        # print(name, traj_buffer[name][traj_iter], packet[name])
                     # for each gait cycle
-                    if (np.array(traj_buffer["GAIT_PHASE"][traj_iter])[-1] == 0 and # the last gait phase is 0
-                        np.all(np.array(traj_buffer["GAIT_PHASE"][traj_iter])[-min(10, len(traj_buffer["GAIT_SUBPHASE"][traj_iter])):-1] )== 1 and # # the last 10 gait phases are all 1
-                        len(traj_buffer["GAIT_PHASE"][traj_iter]) > 50): # actual gait phase change or pseudo
-                        
+                    if (np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-1] == 0 and # the last gait phase is 0
+                        np.all(np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-min(10, len(traj_buffer["GAIT_SUBPHASE"][traj_iter])):-1] == 3) and # # the last 10 gait phases are all 3
+                        len(traj_buffer["GAIT_SUBPHASE"][traj_iter]) > 50): # actual gait phase change or pseudo
+                        print("here")
                         traj_iter += 1
-                        _,_,_ = feature_selection_from_mean_traj(traj_buffer, vis = vis)
                         
                         # extract features for each gait cycle # TODO: replace by broadcasting func
                         #################### after n_init_gait initial gait cycles, update the action 1 per n_action_update gait cycles ######################
@@ -96,13 +205,15 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
                             break 
                         #################### add the sample to the history and check convergence or done #####################
                         his["param"].append(params) # add the user parameters to the history
-                        print(f"his idx: {len(his['param'])}, params: {params}")
                         
-
+                        
                         ###################### reset trajectory buffer ######################
                         # print("reset traj buffer")
                         if traj_iter >= n_traj: # if the trajectory buffer is full, reset it
+                            print(f"before his idx: {len(his['param'])}, params: {params}")
                             popFirstNSamples(traj_buffer, 1)  # pop the first sample from each buffer
+                            print(f"after his idx: {len(his['param'])}, params: {params}")
+
                             for k in traj_buffer.keys():
                                 traj_buffer[k].append([]) # append a new empty list to the buffer 
                             traj_iter -= 1
@@ -110,7 +221,8 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
                     # log data for each packet
                     if len(his["param"]) > 0: # only after action is taken, to make sure the lqr data is available
                         # log the data to the file
-                        log_entry = f"{time_pc:.8f}," + ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA)
+                        log_entry = ','.join(f"{packet[name]:.8f}" for name, _ in SENSOR_DATA) # f"{time_pc:.8f}," + 
+                        
                         log_entry += ',' + ','.join(f"{params[k]}" for k in range(len(params)))
                         # print(log_entry)
                         log_file.write(log_entry + "\n")
@@ -129,10 +241,7 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
     print("Feature extraction completed.")
 
 
-
-    
-
-if __name__ == "__main__": # example usage
+def test_monitor():
     os.system('cls' if os.name == 'nt' else 'clear')
     
     BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -160,4 +269,35 @@ if __name__ == "__main__": # example usage
     set_activity(wireless, 1) # set activity to forward progression walking
     # Rerun the main logic to capture output
     monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
-   
+
+def test_interface():
+    
+    os.system('cls' if os.name == 'nt' else 'clear')
+    BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ENV_DIR = BASE_DIR / "env"
+    bionics_json_path = ENV_DIR / "bionics.json"
+    var_name_json_path = ENV_DIR / "var_names.json"
+    DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
+
+    wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
+    save_folder = DATA_DIR / "adaptive_LQR_0709/test"
+    if not save_folder.exists():
+        save_folder.mkdir(parents=True, exist_ok=True)
+    # test 
+    set_stance_flexion_level(wireless, 59)# initial stance flexion level
+    set_toa_torque_level(wireless, 50) # ?? --> replaced by swing initiation
+    set_swing_flexion_angle(wireless, 50) # target flexion angle
+    
+    print("DEFAULT initial stance flexion",get_stance_flexion_level(wireless))
+    print("DEFAULT max flexion angle", get_swing_flexion_angle(wireless))
+    print("DEFAULT swing initiation", get_toa_torque_level(wireless))
+
+    # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
+    # constraint the activity to be ACTIVITY_FORWARD_PROG
+    set_activity(wireless, 1) # set activity to forward progression walking
+    interface(wireless,log_file= "test.txt", in_port="3333", out_port="4444")
+
+
+if __name__ == "__main__": # example usage
+    # test_monitor()
+    test_interface()

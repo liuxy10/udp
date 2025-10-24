@@ -17,8 +17,8 @@ LOG_FILE = BASE_DIR / "logs" / f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_udp_core.c
 
 # Define sensor data format: (name, struct-format)
 SENSOR_DATA = [
-    ('TIME_SYSTEM_ON', '<I'),
-    ('GAIT_PHASE', '<B'),  # ('ACTIVITY', '<I'),
+    ('TIME_MILLI', '<f'),
+    ('ACTIVITY', '<B'),  # ('ACTIVITY', '<I'),
     ('GAIT_SUBPHASE', '<B'),  # Special handling for uint8_t:     SUBPHASE_FORCE_REJECTION, SUBPHASE_TOE_OFF_ASSIST, SUBPHASE_BUMPER_AVOIDANCE, SUBPHASE_FORCE_FOLLOWING, SUBPHASE_BRAKE
     ('ACTUATOR_POSITION', '<f'),
     ('TORQUE_ESTIMATE', '<f'),
@@ -35,8 +35,8 @@ SENSOR_DATA = [
 
 # Mapping sensor identifier (4 bytes) to sensor names
 SENSOR_ID = {
-    0x24115410: 'TIME_SYSTEM_ON',  # BIONICS_VAR_BASE_TIME_SYSTEM_ON
-    0x24111110: 'GAIT_PHASE',      # BIONICS_VAR_BASE_GAIT_PHASE
+    0x44035D71: 'TIME_MILLI',  # BIONICS_VAR_BASE_TIME_SYSTEM_ON
+    0x24111110: 'ACTIVITY',      # BIONICS_VAR_BASE_GAIT_PHASE
     0x2101C610: 'GAIT_SUBPHASE',   # BIONICS_VAR_BASE_GAIT_SUBPHASE
     0x44010770: 'ACTUATOR_POSITION',  # BIONICS_VAR_KNEE_ACTUATOR_POSITION
     0x44010171: 'TORQUE_ESTIMATE',    # BIONICS_VAR_POWER_KNEE_TORQUE_EST
@@ -50,6 +50,36 @@ SENSOR_ID = {
     0x4401B410: 'GRAVITY_VECTOR_Z',   # BIONICS_VAR_BASE_GRAV_VECT_Z
     0x44118930: 'SHANK_ANGLE',         # BIONICS_VAR_KNEE_JOINT_ANGLE
 }
+
+MIN_MAX_BOUNDS = {
+    # find the min max value from bionics.json
+    'TIME_MILLI': (0, 1e7),
+    'ACTIVITY': (0, 10),  # Example range for activity
+    'GAIT_SUBPHASE': (0, 6),  # Example range for gait subphase
+    'ACTUATOR_POSITION': (0, 100),  # Example range for actuator
+    'TORQUE_ESTIMATE': (-100, 100),  # Example range for torque estimate
+    'ACTUATOR_SETPOINT': (-100, 100),  # Example range for actuator setpoint
+    'LOADCELL': (0, 300),  # Example range for load cell
+    'LINEAR_ACC_X_LOCAL': (-50, 50),  # Example range for linear acceleration
+    'LINEAR_ACC_Y_LOCAL': (-50, 50),  # Example range for linear acceleration
+    'LINEAR_ACC_Z_LOCAL': (-50, 50),  # Example range for linear acceleration
+    'GRAVITY_VECTOR_X': (-10, 10),  # Example range for gravity vector
+    'GRAVITY_VECTOR_Y': (-10, 10),  # Example range for gravity vector
+    'GRAVITY_VECTOR_Z': (-10, 10),  # Example range for gravity vector
+    'SHANK_ANGLE': (-180, 180),  # Example range for shank angle
+}
+
+def any_entry_out_of_bound(packet):
+    for name, _ in SENSOR_DATA:
+        if name in packet:
+            value = packet[name]
+            min_val, max_val = MIN_MAX_BOUNDS.get(name, (None, None))
+            if min_val is not None and max_val is not None:
+                if not (min_val <= value <= max_val):
+                    print(f"Value out of bounds for {name}: {value} not in ({min_val}, {max_val})")
+                    return True
+    return False
+
 
 def parse_packet(data):
     if len(data) < PACKET_SIZE:
@@ -70,11 +100,16 @@ def parse_packet(data):
             value = data[offset+4]
         elif fmt == '<h':  # Special handling for int16_t
             value = struct.unpack(fmt, data[offset+4:offset+6])[0]
-        else:
+        elif fmt == '<f': # Special handling for float
             value = struct.unpack(fmt, data[offset+4:offset+8])[0]
-        if abs(value) > 1e7 and name in ['TIME_SYSTEM_ON', 'GRAVITY_VECTOR_X', 'GRAVITY_VECTOR_Y', 'GRAVITY_VECTOR_Z']:  # Check for invalid values
-            print(f"Invalid value for {name}: {value}. Skipping this whole packet.")
-            return None
+        else: 
+            print("Unsupported format:", fmt)
+        # if abs(value) > 1e7 and name in SENSOR_ID.values(): #['TIME_MILLI', 'GRAVITY_VECTOR_X', 'GRAVITY_VECTOR_Y', 'GRAVITY_VECTOR_Z']:  # Check for invalid values
+        min_val, max_val = MIN_MAX_BOUNDS.get(name, (None, None))
+        if min_val is not None and max_val is not None:
+            if not (min_val <= value <= max_val):
+                print(f"Value out of bounds for {name}: {value} not in ({min_val}, {max_val}) Skipping this whole packet.")
+                return None
         packet[name] = value
         offset += 8  # Move to the next sensor data field
 
@@ -101,7 +136,6 @@ def monitor_and_log_serial(log_file, log_time, log_premature = 20, printlog = Fa
                 byte = ser.read(1)
                 if not byte:
                     continue
-
                 buffer.extend(byte)
 
                 # If a start byte is found and we have a full packet, process it.
