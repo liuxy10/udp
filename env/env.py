@@ -1,3 +1,4 @@
+from collections import namedtuple
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
@@ -14,6 +15,7 @@ import time
 import matplotlib.pyplot as plt
 
 
+Sample = namedtuple('Sample', ['s', 'a', 'r', 's_', 'done'])
 
 
 class RealObsFeature(gym.Env): 
@@ -50,57 +52,45 @@ class RealObsFeature(gym.Env):
         self.seed()
         self.counter = 0
         self.viewer = None
-        self.his_obs = []
+        self.memory = [] # history of observations per gait cycle
         self.max_episode_steps = max_episode_steps
         self.reset()
-        
-
-
-    def initialize_puddle_boundaries(self, punish_bound):
-        self.punish_bound = punish_bound 
-        if punish_bound:
-            low = self.observation_space.low
-            high = self.observation_space.high
-            n_bound_pts = 8
-            # bottom edge
-            bound = np.array([np.linspace(low[0], high[0], n_bound_pts), np.ones(n_bound_pts) * low[1]]).T
-            self.puddle_center += bound.tolist()
-            # top edge
-            bound = np.array([np.linspace(low[0], high[0], n_bound_pts), np.ones(n_bound_pts) * high[1]]).T
-            self.puddle_center += bound.tolist()
-            # left edge
-            bound = np.array([np.ones(n_bound_pts) * low[0], np.linspace(low[1], high[1], n_bound_pts)]).T
-            self.puddle_center += bound.tolist()
-            # right edge
-            bound = np.array([np.ones(n_bound_pts) * high[0], np.linspace(low[1], high[1], n_bound_pts)]).T
-            self.puddle_center += bound.tolist()
-
-            self.puddle_width += [[0.08 * (high[0] - low[0]), 0.08 * (high[1] - low[1])] for _ in range(n_bound_pts*4)]
-            
-
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
+        """Take an action in the environment each skip_num gait cycles.
+        Args:
+            action (np.ndarray): The action to take.
+        Returns:
+            tuple: A tuple containing the new state, reward, done flag, and info dictionary.
+        """
+        truncated = False
+        # clip action to action space
+        action = np.clip(action, self.action_space.low, self.action_space.high)
         self.pos = self.pos + action 
-        pass
-    
+        # clip to param space
+        self.send_param()
+        reward = 0.0
+        done = False
+        if self.counter >= self.max_episode_steps:
+            done = True
+            truncated = True
+        
+        state = self.receive_state(vis=True, wait=10)
+        if state is not None:
+            self.counter += 1
+            reward += self.reward_map(state, action) # TODO: distinguish current step/state vs next step/state?
+            dist_to_goal = np.linalg.norm(state - self.goal)
+            if dist_to_goal < self.goal_threshold:
+                done = True
+                reward += 50.0  # big reward for reaching goal
+
+        return state, reward, done, {"truncated": truncated}
 
 
-    def get_reward(self, state, action):
-        reward = self.reward_map(state, action)
-        # penalize if action would push pos out of bounds
-        if self.punish_bound:
-            next_pos = self.pos + action
-            if not self.observation_space.contains(next_pos):
-                reward -= 10.0
-        return reward
-
-    def _gaussian1d(self, p, mu, sig):
-        return np.exp(-((p - mu)**2)/(2.*sig**2)) / (sig*np.sqrt(2.*np.pi))
 
     def reset(self):
         self.counter = 0
@@ -110,8 +100,21 @@ class RealObsFeature(gym.Env):
             self.pos = copy.copy(self.start)
         # make sure to send out the reset state
         self.send_param()
-        return self.pos
+        self.state = self.receive_state(vis=False, wait=10)
+        return self.pos, self.state
     
+    ######### safety functions ##########
+    
+    def check_param_in_bound(self):
+        for i, name in enumerate(self.cfg.param_names):
+            if self.pos[i] < self.cfg.param_limit[i][0] or self.pos[i] > self.cfg.param_limit[i][1]:
+                return False
+        return True
+    
+    def _clip_param_in_bound(self, pos_full):
+        for i, name in enumerate(self.cfg.param_names):
+            pos_full[i] = np.clip(pos_full[i], self.cfg.param_limit[i][0], self.cfg.param_limit[i][1])
+        return pos_full
 
     ########## communication functions ##########
     def setup_zmq(self, in_port, out_port):
@@ -127,19 +130,26 @@ class RealObsFeature(gym.Env):
         self.subscriber.connect(f"tcp://localhost:{in_port}")
         self.subscriber.setsockopt_string(zmq.SUBSCRIBE, "") # Subscribe to all topics
         print(f"ZMQ Subscriber connected to tcp://localhost:{in_port}")
-
+    
 
     def send_param(self):
+        
         pos_full = np.array([self.cfg.param_default[n] for n in self.cfg.param_names])
         active = np.array([self.cfg.param_active[n] for n in self.cfg.param_names])
         pos_full[active] = self.pos 
+        pos_full = self._clip_param_in_bound(pos_full)
         # fill in the message by cfg name order, if not active, send default value
         message = {'params': {name: int(pos_full[i] * 100) for i, name in enumerate(self.cfg.param_names)}}
-        print(f"Sending params via ZMQ: {message.values()}")
+        print(f"Sending params via ZMQ: {list(message.values())}")
         self.publisher.send_json(message)
 
     def receive_state(self, vis=False, wait=5):
-        """Receive state from ZMQ subscriber with a timeout."""
+        """Receive state from ZMQ subscriber with a timeout.
+        Args:
+            vis (bool): Whether to visualize the gait cycle.
+            wait (float): Maximum time to wait for a valid state in seconds.
+        Returns:
+            np.ndarray: The received state if valid, else None."""
         start_time = time.time()
         while time.time() - start_time < wait:
             try:
@@ -157,7 +167,9 @@ class RealObsFeature(gym.Env):
                         vis_gait_cycle(traj, self.cfg.targets) if vis else None
                        
                         state = feature_selection_from_mean_traj(traj, self.cfg.target_names)
-                        
+
+                        state = np.array([(state[i] - self.cfg.state_limit[i][0]) / (self.cfg.state_limit[i][1] - self.cfg.state_limit[i][0]) 
+                                    for i in range(self.cfg.state_dim)])
                         return state
                     # If state is not valid, loop continues to get next message
             except zmq.Again:
@@ -165,4 +177,31 @@ class RealObsFeature(gym.Env):
                 continue
         
         raise TimeoutError(f"Did not receive a valid state within {wait} seconds.")
+    
+
+
+    ########## logging ##########
+    def close(self):
         
+        self.publisher.close()
+        self.subscriber.close()
+        
+    def save_memory(self, folder_path):
+        file_name = "online_memories_{}.csv".format(time.strftime("%Y%m%d-%H%M%S"))
+        print(f"Saving environment memory to {os.path.join(folder_path, file_name)}")
+        # Re-arrange the dataset into (state, action, reward, next_state) tuples for RL
+        state_names = self.cfg.target_names if self.cfg.target_names else [f"s{i}" for i in range(self.n_state)]
+        memories = []
+        for sample in self.memory:
+            s = sample.s
+            a = sample.a
+            r = sample.r
+            s_ = sample.s_ if sample.s_ is not None else np.array([np.nan]*self.n_state)
+            memories.append( np.concatenate( (s, s_, a, r) ) )
+        # Save the generated transitions to a CSV file
+        col_names = [f"s_{name}" for name in state_names] + [f"s_next_{name}" for name in state_names] + [f"a_c{i}" for i in range(self.n_action)] + ["r"]
+        np.savetxt(os.path.join(folder_path, file_name), np.array(memories).reshape(len(memories), -1), header=",".join(col_names), delimiter=",")
+
+        # --- Visualization ---
+            
+    

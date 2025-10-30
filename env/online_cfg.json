@@ -1,4 +1,10 @@
 {
+    "policy":{
+        "type": "lspi",
+        "model": "quadratic",
+        "path": "/Users/xinyi/Documents/Data/ossur/OT_08_26"
+    },
+
     "state_targets":{
         "max_knee_position_st": 40,
         "min_knee_position_st": 25,
@@ -14,13 +20,15 @@
         "max_knee_position_st": [20, 45],
         "min_knee_position_st": [18, 35],
         "max_knee_position_sw": [40, 80],
-        "min_knee_position_sw": [15, 30],
+        "min_knee_position_sw": [15, 30]
+        
+    },
+    "_":{
+        "st_sw_phase": [0.4, 0.55],
         "max_knee_position_phase_st": [0, 0.1],
         "min_knee_position_phase_st": [0.35, 0.55],
         "max_knee_position_phase_sw": [0.1, 0.3],
-        "min_knee_position_phase_sw": [0.25, 0.5],
-        "st_sw_phase": [0.4, 0.55]
-    },
+        "min_knee_position_phase_sw": [0.25, 0.5]},
    
     "param_limit": {
         "stance_flexion_level": [0.4, 0.75],
@@ -40,10 +48,10 @@
     
     "lspi_cfg":{
           "gamma": 0.95,
-          "memory_size": 300,
+          "memory_size": 10,
           "update_size": 100,
           "memory_type": "sample",
-          "eval_type": "batch"
+          "eval_type": "iterative"
           
     }
 

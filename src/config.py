@@ -8,13 +8,15 @@ class Config:
         with open(cfg_path, 'r') as f:
             cfg = json.load(f)
         self.targets = cfg.get("state_targets", {})
-        self.target_names = list(self.targets.keys())
-        self.state_limit = list(cfg.get("state_limit", {}).values())
-        self.param_limit = list(cfg.get("param_limit", {}).values())
+        self.state_limits = cfg.get("state_limit", {})
+        self.target_names = list(set(self.targets.keys()).intersection(set(self.state_limits.keys())))
+        # trim targets to only those in target_names
+        self.targets = {name: self.targets[name] for name in self.target_names} # trim to only target names
+        self.state_limit = [self.state_limits[name] for name in self.target_names]
         self.param_names = list(cfg.get("param_limit", {}).keys())
+        self.param_limit = [cfg.get("param_limit", {}).get(name, [0, 1]) for name in self.param_names]
         self.param_active = cfg.get("param_active", [True]*len(self.param_names))
         self.param_default = cfg.get("param_default", {})
-        assert len(self.targets) == len(self.state_limit), "State targets and limits must have the same length"
         self.state_dim = len(self.targets)
         self.action_dim = sum(self.param_active.values())
 
@@ -24,6 +26,14 @@ class Config:
             for i, name in enumerate(self.target_names)
         ])
         self._get_lspi_cfg(cfg)
+        self.skip_num = cfg.get("skip_num", 4)
+
+        # additional policy config
+        self.policy_cfg = cfg.get("policy", {})
+        self.policy_type = self.policy_cfg.get("type", "lspi")
+        self.policy_model = self.policy_cfg.get("model", "quadratic")
+        self.policy_eval_type = self.policy_cfg.get("eval_type", "batch")
+        self.policy_path = self.policy_cfg.get("path", "")
         
 
 
@@ -35,6 +45,7 @@ class Config:
             self.lspi_cfg.memory_size = lspi_cfg.get("memory_size", 300)
             self.lspi_cfg.memory_type = lspi_cfg.get("memory_type", "sample")
             self.lspi_cfg.eval_type = lspi_cfg.get("eval_type", "batch")
+            
 
         else:
             raise ValueError("LSPI configuration 'lspi_cfg' not found in the config file.")

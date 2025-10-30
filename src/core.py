@@ -10,6 +10,7 @@ import asciichartpy as acp
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import math
 # from src.connection.device import *
 from src.utils import  popFirstNSamples, set_user_parameters_batch
 from src.connection.udp import *
@@ -43,10 +44,10 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
     n_traj = 4 # max number of trajectories in the traj buffer
     
     traj_buffer = {
-                        "GAIT_SUBPHASE": [[] for _ in range(n_traj)],
-                        "LOADCELL": [[] for _ in range(n_traj)],
-                        "ACTUATOR_POSITION":[[] for _ in range(n_traj)],
-                        "TORQUE_ESTIMATE":[[] for _ in range(n_traj)],
+                    "GAIT_SUBPHASE": [[] for _ in range(n_traj)],
+                    "LOADCELL": [[] for _ in range(n_traj)],
+                    "ACTUATOR_POSITION":[[] for _ in range(n_traj)],
+                    "TORQUE_ESTIMATE":[[] for _ in range(n_traj)],
                     }
     # his = {"param": []} # history of current state
     
@@ -84,12 +85,8 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
                     if (len(traj_buffer["GAIT_SUBPHASE"][traj_iter]) > 50 and
                         np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-1] == 0 and 
                         np.all(np.array(traj_buffer["GAIT_SUBPHASE"][traj_iter])[-10:-1] == 3)):
-                        
                         traj_iter += 1
-
                         if traj_iter >= n_traj:
-                            
-                            
                             publisher.send_json({"trajectory": traj_buffer})
                             traj_buffer = popFirstNSamples(traj_buffer, 1)
                             for k in traj_buffer.keys():
@@ -110,7 +107,7 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
             try:
                 message = subscriber.recv_json(flags=zmq.NOBLOCK)
                 if 'params' in message:
-                    print("RECEIVED")
+                    print(f"RECEIVED the paramer, updated to {message['params']}")
                     new_params = message['params']
                     new_params = np.array([new_params.get(name, params[i]) for i, name in enumerate(param_names)], dtype=int)
                     if not np.array_equal(new_params, params):
@@ -124,8 +121,9 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
     publisher.close()
     subscriber.close()
     context.term()
-    print("ZMQ connections and serial port closed.")
 
+    print("ZMQ connections and serial port closed.")
+    ser.close()
     print("Interface task completed.")
 
 
@@ -159,7 +157,7 @@ def monitor(wireless, log_file, vis = False, change = [True, True, True]):
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
         print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
         log_file.write(
-            # "TIME_PC" + ',' +# PC received time stamp
+            "TIME_MILLI" + ',' +# PC received time stamp
             ','.join(name for name, _ in SENSOR_DATA) + # sensor data
             ',' + ','.join(["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]) + # user parameters
             "\n"
@@ -280,9 +278,7 @@ def test_interface():
     DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
 
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
-    save_folder = DATA_DIR / "adaptive_LQR_0709/test"
-    if not save_folder.exists():
-        save_folder.mkdir(parents=True, exist_ok=True)
+
     # test 
     set_stance_flexion_level(wireless, 59)# initial stance flexion level
     set_toa_torque_level(wireless, 50) # ?? --> replaced by swing initiation
@@ -295,9 +291,46 @@ def test_interface():
     # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
     # constraint the activity to be ACTIVITY_FORWARD_PROG
     set_activity(wireless, 1) # set activity to forward progression walking
-    interface(wireless,log_file= "test.txt", in_port="3333", out_port="4444")
+    interface(wireless,log_file= "test.csv", in_port="3333", out_port="4444")
 
+def emulate_interface():
+    """ Emulate interface function, but not connected to the wireless device """
+    context = zmq.Context()
+    publisher = context.socket(zmq.PUB)
+    publisher.bind("tcp://*:4444")
+    print("ZMQ Publisher bound to tcp://*:4444")
+
+    traj_buffer = {
+                    "GAIT_SUBPHASE": [[]],
+                    "LOADCELL": [[]],
+                    "ACTUATOR_POSITION":[[]],
+                    "TORQUE_ESTIMATE":[[]],
+                    }
+
+    count = 0
+    while True:
+        # Emulate data
+        traj_buffer["GAIT_SUBPHASE"].append([0.]*25 + [3.]*25)
+        traj_buffer["LOADCELL"].append([0.]*50)
+        c1, c2, c3 = 20 + np.random.rand()*5, 20 + np.random.rand()*5, 50 + np.random.rand()*10
+        traj_buffer["ACTUATOR_POSITION"].append([math.sin(i/25 * np.pi)* c1 + c2 + np.random.rand()*5  for i in range(25)] \
+                                                + [math.sin(i/25 * np.pi)* c3 + c2 + np.random.rand()*5 for i in range(25)])
+        traj_buffer["TORQUE_ESTIMATE"].append([0.]*50)
+
+        if len(traj_buffer["GAIT_SUBPHASE"]) > 4:
+            for k in traj_buffer.keys():
+                traj_buffer[k].pop(0)
+        # Send data
+        publisher.send_json({"trajectory": traj_buffer})
+    
+        print("count:", count, f"sent trajectory data {list(traj_buffer.keys())}")
+        count += 1
+        time.sleep(0.2)  # Emulate a delay
+        if count >= 1000:
+            break
+        
 
 if __name__ == "__main__": # example usage
     # test_monitor()
-    test_interface()
+    # test_interface()
+    emulate_interface()

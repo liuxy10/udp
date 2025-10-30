@@ -281,7 +281,7 @@ def vis_target_line(axs, targets):
             continue
         value_name = name.replace('_phase', '')
         if value_name in targets:
-            phase_value = targets[name] + targets["st_sw_transition"] if 'sw' in name else targets[name]
+            phase_value = targets[name] + targets["st_sw_phase"] if 'sw' in name else targets[name]
             axs[2].plot(phase_value, targets[value_name], 'kx')  # plot control points
             axs[2].text(phase_value, targets[value_name], f'{value_name}', color='black')
             control_points.append((phase_value, targets[value_name]))
@@ -302,7 +302,7 @@ def vis_target_line(axs, targets):
         dy = np.zeros_like(cp_y)
         cs = CubicHermiteSpline(cp_x, cp_y, dy, extrapolate=False)
         axs[2].plot(x_sp, cs(x_sp), 'k-', alpha=0.2, label='Target Spline')
-        axs[2].axvline(x=targets["st_sw_transition"], color='gray', linestyle='-', alpha=0.2, label='target Transition')
+        axs[2].axvline(x=targets["st_sw_phase"], color='gray', linestyle='-', alpha=0.2, label='target Transition')
         axs[2].legend(loc='upper right', fontsize='x-small')
     return axs
 
