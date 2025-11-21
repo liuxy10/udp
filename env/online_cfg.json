@@ -8,7 +8,7 @@
     "state_targets":{
         "max_knee_position_st": 40,
         "min_knee_position_st": 25,
-        "max_knee_position_sw": 80,
+        "max_knee_position_sw": 70,
         "min_knee_position_sw": 20,
         "st_sw_phase": 0.55,
         "max_knee_position_phase_st": 0.1,
@@ -48,8 +48,8 @@
     
     "lspi_cfg":{
           "gamma": 0.95,
-          "memory_size": 10,
-          "update_size": 100,
+          "memory_size": 150,
+          "update_size": 30,
           "memory_type": "sample",
           "eval_type": "iterative"
           

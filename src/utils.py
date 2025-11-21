@@ -144,17 +144,7 @@ def process_signal(data):
     return mean, std
 
 
-def vis_gait_cycle(traj_buffer, targets = {
-            "max_actuator_position_st": 20 + 20,
-            "max_actuator_position_phase_st": 0.1,
-            "min_actuator_position_st": 5 + 20,
-            "min_actuator_position_phase_st": 0.4,
-            "st_sw_transition": 0.6,
-            "max_actuator_position_sw": 70 + 20,
-            "max_actuator_position_phase_sw": 0.7 - 0.6,
-            "min_actuator_position_sw": 0 + 20,
-            "min_actuator_position_phase_sw": 0.95 - 0.6
-         }):
+def vis_gait_cycle(traj_buffer, targets = {}):
     """
     Visualize gait cycle data using matplotlib for interactive plotting.
     This function initializes a plot on the first call and updates it
@@ -163,7 +153,23 @@ def vis_gait_cycle(traj_buffer, targets = {
     global fig, axs, lines
 
     # Extract data from the buffer, interpolate to 100 points, and calculate mean and std
-
+    target_vis = {
+            "max_knee_position_st": 20 + 20,
+            "max_knee_position_phase_st": 0.1,
+            "min_knee_position_st": 5 + 20,
+            "min_knee_position_phase_st": 0.4,
+            "st_sw_phase": 0.6,
+            "max_knee_position_sw": 70 + 20,
+            "max_knee_position_phase_sw": 0.7 - 0.6,
+            "min_knee_position_sw": 0 + 20,
+            "min_knee_position_phase_sw": 0.95 - 0.6
+         }
+    
+    # update the value of target_vis using targets
+    for k in target_vis.keys():
+        if k in targets:
+            target_vis[k] = targets[k]
+    
 
     loadcell_mean, loadcell_std = process_signal(traj_buffer ["GAIT_SUBPHASE"]) #["LOADCELL"])
     knee_angle_mean, knee_angle_std = process_signal(traj_buffer["ACTUATOR_POSITION"])
@@ -174,8 +180,9 @@ def vis_gait_cycle(traj_buffer, targets = {
     x_axis = np.linspace(0, 1, len(knee_angle_mean))
     st_sw_transition = np.argmax(subphase_mean > 2)/100  # Example threshold for stance to swing transition
     # classic min, max points 
-    y_names = [k for k in targets.keys() if 'phase' not in k and 'transition' not in k]
-    x_names = [k for k in targets.keys() if 'phase' in k]
+    y_names = ["max_knee_position_st", "min_knee_position_st", "max_knee_position_sw", "min_knee_position_sw"]
+    x_names = ["max_knee_position_phase_st", "min_knee_position_phase_st", "max_knee_position_phase_sw", "min_knee_position_phase_sw"]
+
     titles = ["subphase", "Torque Estimate", "Knee Angle (Actuator Position)"]
     ylabels = ["", "Torque (Nm)", "Angle (degrees)"]
     colors = ['green', 'blue', 'red']
@@ -228,7 +235,7 @@ def vis_gait_cycle(traj_buffer, targets = {
             sw_indices = [i for i, name in enumerate(x_names) if 'sw' in name]
             xs[sw_indices] += st_sw_transition
             axs = vis_feature(axs, ys, xs, y_names)
-            axs = vis_target_line(axs, targets)
+            axs = vis_target_line(axs, target_vis)
 
         # Add legend    
             axs[i].legend(loc='upper right', fontsize='x-small')

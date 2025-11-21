@@ -42,7 +42,8 @@ class Config:
             lspi_cfg = cfg["lspi_cfg"]
             self.lspi_cfg = lambda: None
             self.lspi_cfg.gamma = lspi_cfg.get("gamma", 0.95)
-            self.lspi_cfg.memory_size = lspi_cfg.get("memory_size", 300)
+            self.lspi_cfg.memory_size = lspi_cfg.get("memory_size", 150)
+            self.lspi_cfg.update_size = lspi_cfg.get("update_size", 50)
             self.lspi_cfg.memory_type = lspi_cfg.get("memory_type", "sample")
             self.lspi_cfg.eval_type = lspi_cfg.get("eval_type", "batch")
             

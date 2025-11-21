@@ -17,7 +17,10 @@ from src.connection.udp import *
 from src.connection.device import *
 import time 
 import zmq
-import json
+import select
+import termios
+import tty
+import zmq
 
 
 def interface(wireless, log_file, in_port = '3333', out_port = '4444',
@@ -54,6 +57,23 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
     # user parameters from firmware 
     params = np.array([get_stance_flexion_level(wireless), get_swing_flexion_angle(wireless), get_toa_torque_level(wireless)])
     param_names = ["stance_flexion_level", "swing_flexion_angle", "toa_torque_level"]
+
+    paused = False
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    tty.setcbreak(fd)  # Switch terminal to cbreak mode
+
+    
+    def check_for_pause():
+        nonlocal paused
+        if select.select([sys.stdin], [], [], 0)[0]:
+            char = sys.stdin.read(1)
+            if char == ' ':
+                paused = not paused
+                print("Paused" if paused else "Resumed")
+
+    
     # Open the serial port and log file
     with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(log_file, 'w') as log_file:
         print(f"Monitoring {SERIAL_PORT} at {BAUD_RATE} baud. Press Ctrl+C to exit. Saving data to {log_file}.")
@@ -67,17 +87,22 @@ def interface(wireless, log_file, in_port = '3333', out_port = '4444',
         buffer = bytearray()
         # try:
         while True:
+            check_for_pause()
+            if paused:
+                time.sleep(0.1)
+                continue
+
             # Check for new parameters from ZMQ
             byte = ser.read(1)
             if not byte:
                 continue
             buffer.extend(byte)
-            
             if buffer[-1] == START_BYTE and len(buffer) >= PACKET_SIZE:
                 packet = parse_packet(buffer)
                 
                 if packet and np.all(np.array([v for v in packet.values()]) > -1e6) and np.all(np.array([v for v in packet.values()]) < 1e6): 
                     # add to traj buffer
+                    # print(packet.keys())
                     for name in traj_buffer.keys():
                         traj_buffer[name][traj_iter].append(packet[name])
                     
@@ -268,7 +293,7 @@ def test_monitor():
     # Rerun the main logic to capture output
     monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
 
-def test_interface():
+def test_interface(log_file= "test.csv"):
     
     os.system('cls' if os.name == 'nt' else 'clear')
     BASE_DIR = pathlib.Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -291,14 +316,15 @@ def test_interface():
     # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
     # constraint the activity to be ACTIVITY_FORWARD_PROG
     set_activity(wireless, 1) # set activity to forward progression walking
-    interface(wireless,log_file= "test.csv", in_port="3333", out_port="4444")
+    os.makedirs(DATA_DIR / "OT_11_17", exist_ok=True)
+    interface(wireless,log_file= os.path.join(DATA_DIR, "OT_10_31", log_file), in_port="3333", out_port="4444")
 
 def emulate_interface():
     """ Emulate interface function, but not connected to the wireless device """
     context = zmq.Context()
     publisher = context.socket(zmq.PUB)
     publisher.bind("tcp://*:4444")
-    print("ZMQ Publisher bound to tcp://*:4444")
+    print("ZMQ Publisher bound to tcp://*:4444. Press SPACE to pause/resume.")
 
     traj_buffer = {
                     "GAIT_SUBPHASE": [[]],
@@ -308,13 +334,33 @@ def emulate_interface():
                     }
 
     count = 0
+    paused = False
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    tty.setcbreak(fd)  # Switch terminal to cbreak mode
+
+    
+    def check_for_pause():
+        nonlocal paused
+        if select.select([sys.stdin], [], [], 0)[0]:
+            char = sys.stdin.read(1)
+            if char == ' ':
+                paused = not paused
+                print("Paused" if paused else "Resumed")
+
     while True:
+        check_for_pause()
+        if paused:
+            time.sleep(0.1)
+            continue
+
         # Emulate data
         traj_buffer["GAIT_SUBPHASE"].append([0.]*25 + [3.]*25)
         traj_buffer["LOADCELL"].append([0.]*50)
         c1, c2, c3 = 20 + np.random.rand()*5, 20 + np.random.rand()*5, 50 + np.random.rand()*10
         traj_buffer["ACTUATOR_POSITION"].append([math.sin(i/25 * np.pi)* c1 + c2 + np.random.rand()*5  for i in range(25)] \
-                                                + [math.sin(i/25 * np.pi)* c3 + c2 + np.random.rand()*5 for i in range(25)])
+                                                + [math.sin(i/25 * np.pi*1.2)* c3 + c2 + np.random.rand()*5 for i in range(25)])
         traj_buffer["TORQUE_ESTIMATE"].append([0.]*50)
 
         if len(traj_buffer["GAIT_SUBPHASE"]) > 4:
@@ -325,12 +371,9 @@ def emulate_interface():
     
         print("count:", count, f"sent trajectory data {list(traj_buffer.keys())}")
         count += 1
-        time.sleep(0.2)  # Emulate a delay
-        if count >= 1000:
-            break
-        
+        time.sleep(0.1)  # Emulate a delay
 
 if __name__ == "__main__": # example usage
     # test_monitor()
-    # test_interface()
+    # test_interface(log_file=f"trial_{time.strftime('%Y%m%d_%H%M%S', time.localtime())}")
     emulate_interface()

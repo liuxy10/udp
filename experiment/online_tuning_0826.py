@@ -3,7 +3,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from wireless_protocol_library import WirelessProtocolLibrary, TcpCommunication
-from src.core import *
+from src.node_interface import *
 from src.connection.device import *
 from src.connection.udp import *
 

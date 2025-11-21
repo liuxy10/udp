@@ -4,3 +4,5 @@ wireless_protocol_library
 pandas
 numpy
 matplotlib
+rl-lspi
+## TODO: add other dependencies here

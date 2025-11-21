@@ -1,3 +1,5 @@
 **/*.pyc
 **/*.csv
 **/*.png
+cache/**
+__pycache__/** 

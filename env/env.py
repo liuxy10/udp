@@ -12,6 +12,8 @@ import os,sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__))) # current repo root dir
 from src.utils import vis_gait_cycle, feature_selection_from_mean_traj
 import time
+import matplotlib
+import io, asyncio, threading, websockets
 import matplotlib.pyplot as plt
 
 
@@ -55,6 +57,7 @@ class RealObsFeature(gym.Env):
         self.memory = [] # history of observations per gait cycle
         self.max_episode_steps = max_episode_steps
         self.reset()
+        self.init_render()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -79,28 +82,36 @@ class RealObsFeature(gym.Env):
             done = True
             truncated = True
         
-        state = self.receive_state(vis=True, wait=10)
+        state = self.receive_state(vis=True, wait=10000)
+
         if state is not None:
-            self.counter += 1
+            # self.counter += 1
             reward += self.reward_map(state, action) # TODO: distinguish current step/state vs next step/state?
             dist_to_goal = np.linalg.norm(state - self.goal)
             if dist_to_goal < self.goal_threshold:
                 done = True
                 reward += 50.0  # big reward for reaching goal
+            
+            # if out of bound, punish and reset
+            if self.punish_bound:
+                if not self.check_state_in_bound(state):
+                    print("State out of bound! Resetting environment.")
+                    reward -= 20.0
+                    done = True
+                
 
         return state, reward, done, {"truncated": truncated}
 
 
 
     def reset(self):
-        self.counter = 0
         if self.start is None:
             self.pos = self.param_space.sample()
         else:
             self.pos = copy.copy(self.start)
         # make sure to send out the reset state
         self.send_param()
-        self.state = self.receive_state(vis=False, wait=10)
+        self.state = self.receive_state(vis=True, wait=10000)
         return self.pos, self.state
     
     ######### safety functions ##########
@@ -115,6 +126,14 @@ class RealObsFeature(gym.Env):
         for i, name in enumerate(self.cfg.param_names):
             pos_full[i] = np.clip(pos_full[i], self.cfg.param_limit[i][0], self.cfg.param_limit[i][1])
         return pos_full
+    
+
+    def check_state_in_bound(self, state):
+        for i in range(self.n_state):
+            if state[i] < -1 or state[i] > 1:
+                return False
+        return True
+    
 
     ########## communication functions ##########
     def setup_zmq(self, in_port, out_port):
@@ -186,8 +205,8 @@ class RealObsFeature(gym.Env):
         self.publisher.close()
         self.subscriber.close()
         
-    def save_memory(self, folder_path):
-        file_name = "online_memories_{}.csv".format(time.strftime("%Y%m%d-%H%M%S"))
+    def save_memory(self, folder_path, name = None):
+        file_name = "online_memories_{}.csv".format(time.strftime("%Y%m%d-%H%M%S")) if name is None else name
         print(f"Saving environment memory to {os.path.join(folder_path, file_name)}")
         # Re-arrange the dataset into (state, action, reward, next_state) tuples for RL
         state_names = self.cfg.target_names if self.cfg.target_names else [f"s{i}" for i in range(self.n_state)]
@@ -200,8 +219,137 @@ class RealObsFeature(gym.Env):
             memories.append( np.concatenate( (s, s_, a, r) ) )
         # Save the generated transitions to a CSV file
         col_names = [f"s_{name}" for name in state_names] + [f"s_next_{name}" for name in state_names] + [f"a_c{i}" for i in range(self.n_action)] + ["r"]
+        os.makedirs(folder_path, exist_ok=True)
         np.savetxt(os.path.join(folder_path, file_name), np.array(memories).reshape(len(memories), -1), header=",".join(col_names), delimiter=",")
 
-        # --- Visualization ---
-            
-    
+    ####### rendering ########
+
+    def init_render(self):
+        matplotlib.use('Agg')  # off-screen backend
+
+        # plotting skeleton: params (multiple lines), action (increments), states (trajectories), reward (trajectory)
+        self.fig, axes = plt.subplots(4, 1, figsize=(8, 10), constrained_layout=True)
+        ax_params, ax_action, ax_state, ax_reward = axes
+
+        ax_params.set_title("Parameters (per active param)")
+        ax_params.set_xlim(0, 200); ax_params.set_ylim(0, 1)
+        ax_action.set_title("Action increments")
+        ax_action.set_xlim(0, 200); ax_action.set_ylim(-1, 1)
+        ax_state.set_title("State trajectories")
+        ax_state.set_xlim(0, 200); ax_state.set_ylim(0, 1)
+        ax_reward.set_title("Reward trajectory")
+        ax_reward.set_xlim(0, 200); ax_reward.set_ylim(-50, 100)
+
+        # create line objects; params: one line per full param set (will only plot active ones)
+        n_params = len(self.cfg.param_names)
+        self.param_lines = [ax_params.plot([], [], label=name)[0] for name in self.cfg.param_names]
+        ax_params.legend(loc='upper right', fontsize='small')
+
+        # action (plot each action dim as line)
+        self.action_lines = [ax_action.plot([], [], label=f"a{i}")[0] for i in range(self.n_action)]
+        ax_action.legend(loc='upper right', fontsize='small')
+
+        # states
+        self.state_lines = [ax_state.plot([], [], label=f"s{i}")[0] for i in range(self.n_state)]
+        ax_state.legend(loc='upper right', fontsize='small')
+
+        # reward single line
+        self.reward_line, = ax_reward.plot([], [], label='reward')
+        ax_reward.legend(loc='upper right', fontsize='small')
+
+        # history buffers
+        self._hist_max = 200
+        self._time_buf = []
+        self._param_buf = []  # list of length T of arrays length n_params
+        self._action_buf = []  # list of length T of arrays length n_action
+        self._state_buf = []  # list of length T of arrays length n_state
+        self._reward_buf = []
+
+        # helper to push new samples and update matplotlib line data
+        def _push_sample(param, action, state, reward):
+            t = (self._time_buf[-1] + 1) if self._time_buf else 0
+            self._time_buf.append(t)
+            self._param_buf.append(np.array(param))
+            self._action_buf.append(np.array(action))
+            self._state_buf.append(np.array(state) if state is not None else np.array([np.nan]*self.n_state))
+            self._reward_buf.append(float(reward))
+
+            # trim
+            if len(self._time_buf) > self._hist_max:
+                self._time_buf = self._time_buf[-self._hist_max:]
+                self._param_buf = self._param_buf[-self._hist_max:]
+                self._action_buf = self._action_buf[-self._hist_max:]
+                self._state_buf = self._state_buf[-self._hist_max:]
+                self._reward_buf = self._reward_buf[-self._hist_max:]
+
+            xs = self._time_buf
+            # update param lines
+            params_arr = np.vstack(self._param_buf) if len(self._param_buf) else np.zeros((0, n_params))
+            for i, line in enumerate(self.param_lines):
+                ys = params_arr[:, i] if params_arr.size else []
+                line.set_data(xs, ys)
+                ax_params.relim(); ax_params.autoscale_view()
+
+            actions_arr = np.vstack(self._action_buf) if len(self._action_buf) else np.zeros((0, self.n_action))
+            for i, line in enumerate(self.action_lines):
+                ys = actions_arr[:, i] if actions_arr.size else []
+                line.set_data(xs, ys)
+                ax_action.relim(); ax_action.autoscale_view()
+
+            states_arr = np.vstack(self._state_buf) if len(self._state_buf) else np.zeros((0, self.n_state))
+            for i, line in enumerate(self.state_lines):
+                ys = states_arr[:, i] if states_arr.size else []
+                line.set_data(xs, ys)
+                ax_state.relim(); ax_state.autoscale_view()
+
+            self.reward_line.set_data(xs, self._reward_buf)
+            ax_reward.relim(); ax_reward.autoscale_view()
+
+        # expose helper so step/render can push samples
+        self._push_sample = _push_sample
+
+        # WebSocket server to broadcast current PNG to connected clients
+        self._ws_clients = set()
+        self._ws_loop = asyncio.new_event_loop()
+
+        async def _ws_handler(ws, path):
+            self._ws_clients.add(ws)
+            try:
+                await ws.wait_closed()
+            finally:
+                self._ws_clients.discard(ws)
+
+        def _start_ws_server():
+            asyncio.set_event_loop(self._ws_loop)
+            server = websockets.serve(_ws_handler, "0.0.0.0", 8765)
+            self._ws_loop.run_until_complete(server)
+            self._ws_loop.run_forever()
+
+        t = threading.Thread(target=_start_ws_server, daemon=True)
+        t.start()
+        self._ws_thread = t
+
+        def _broadcast_png():
+            buf = io.BytesIO()
+            self.fig.savefig(buf, format='png')
+            data = buf.getvalue()
+            if not self._ws_clients:
+                return
+            async def _send_all():
+                coros = [client.send(data) for client in list(self._ws_clients)]
+                await asyncio.gather(*coros, return_exceptions=True)
+            asyncio.run_coroutine_threadsafe(_send_all(), self._ws_loop)
+
+        self._broadcast_png = _broadcast_png
+
+        print("Render initialized: Matplotlib skeleton created and WebSocket server started on ws://localhost:8765")
+
+    def render(self, mode='human'):
+        if mode == 'human':
+            self._broadcast_png()
+        else:
+            raise NotImplementedError(f"Render mode '{mode}' not implemented.")
+
+        # push current sample to history buffers
+        self._push_sample(self.pos, np.zeros(self.n_action), self.state, 0.0)
+        
