@@ -9,11 +9,11 @@ import os, sys
 import asciichartpy as acp
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 # from src.connection.device import *
-from src.utils import addSample, popFirstNSamples, feature_selection_from_mean_traj, set_user_parameters_action
-from src.connection.udp import *
-from src.connection.device import *
+from udp.utils import addSample, popFirstNSamples, feature_selection_from_mean_traj, set_user_parameters_action
+from udp.connection.udp import *
+from udp.connection.device import *
 import time 
 
 def addSample(his, state, action, done, x_d):

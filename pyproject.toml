@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "udp"
+version = "0.1.0"
+description = "UDP User Interface and Control Package"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "User", email = "user@example.com"}
+]
+dependencies = [
+    "pyserial",
+    "pynput",
+    # "wireless_protocol_library", # Not found on PyPI
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "asciichartpy"
+    # "rl-lspi" # Not found on PyPI
+]
+
+[project.urls]
+"Homepage" = "https://github.com/liuxy10/udp"

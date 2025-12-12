@@ -3,10 +3,12 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from wireless_protocol_library import WirelessProtocolLibrary, TcpCommunication
+
+from src.connection.device import *
+from src.connection.udp import *
 from src.node_interface import *
 from src.connection.device import *
 from src.connection.udp import *
-
 
 
 if __name__ == "__main__":
@@ -19,15 +21,16 @@ if __name__ == "__main__":
     DATA_DIR = pathlib.Path("~/Documents/Data/ossur").expanduser()
 
     wireless = WirelessProtocolLibrary(TcpCommunication(), bionics_json_path) # Time out meaning that the power knee is not connected
-    exp_id = "OT_08_26/data" # Example path, adjust as needed
+    exp_id = "OT_11_26/data" # Example path, adjust as needed
     save_folder = DATA_DIR / exp_id
     if not save_folder.exists():
         save_folder.mkdir(parents=True, exist_ok=True)
-
-    # test
-    set_stance_flexion_level(wireless, 50) # initial stance flexion level
-    set_toa_torque_level(wireless, 50) # also known as swing initiation
+    # test 
+    set_stance_flexion_level(wireless, 50)# initial stance flexion level
+    set_toa_torque_level(wireless, 50) # ?? --> replaced by swing initiation
     set_swing_flexion_angle(wireless, 49) # target flexion angle
+    
+    set_user_weight(wireless, 150) # ming 
     print("DEFAULT initial stance flexion",get_stance_flexion_level(wireless))
     print("DEFAULT max flexion angle", get_swing_flexion_angle(wireless))
     print("DEFAULT swing initiation", get_toa_torque_level(wireless))
@@ -35,8 +38,14 @@ if __name__ == "__main__":
     time_stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     # monitor_and_feature_extraction(wireless, x_d = np.array([1., 1., 1.]), vis = True, log_file = save_folder / f"log_{time_stamp}.csv")
     # constraint the activity to be ACTIVITY_FORWARD_PROG
-    # set_activity(wireless, 1) # set activity to forward progression walking
+    set_activity(wireless, 1) # set activity to forward progression walking
     # Rerun the main logic to capture output
-    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [False, True, True])
-    # monitor(wireless, vis = True, log_file = "test.txt" , change = [True, False, True])
-    monitor(wireless, vis = True, log_file = "test.txt" , change = [False, False, True])
+    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [False, True, False])
+    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [False, False, True])
+    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [True, False, False])
+    
+    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [True, False, False])
+    # monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [False, False, True])
+    monitor(wireless, vis = True, log_file = save_folder / f"log_{time_stamp}.csv", change = [False,  True, False])
+   
+   

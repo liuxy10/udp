@@ -5,13 +5,13 @@ import pathlib
 import time
 import os, sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 from wireless_protocol_library import TcpCommunication, WirelessProtocolLibrary
 
-from connection.device import *
-from plot_real_time import *
-from connection.tcp import ProstheticKneeTester
+from udp.connection.device import *
+from udp.plot_real_time import *
+from udp.connection.tcp import ProstheticKneeTester
 
 import tkinter as tk
 from tkinter import ttk

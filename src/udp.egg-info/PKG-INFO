@@ -1,8 +1,20 @@
-# COMM_INTERFACE and RL Online Tuning
+Metadata-Version: 2.4
+Name: udp
+Version: 0.1.0
+Summary: UDP User Interface and Control Package
+Author-email: User <user@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/liuxy10/udp
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: pyserial
+Requires-Dist: pynput
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: asciichartpy
 
-> [!IMPORTANT]
-> This project has been refactored into a Python package named `udp`.
-> Please install it using `pip install -e .` from the root directory.
+# COMM_INTERFACE and RL Online Tuning
 
 ## Overview
 This project provides tools for real‑time plotting and online reinforcement‑learning (RL) tuning of a prosthetic knee interface.
@@ -35,25 +47,24 @@ This project provides tools for real‑time plotting and online reinforcement‑
 1. Real‑time plotting (demo)
      - Runs a simple real‑time position plot for incoming test data:
      ```
-     python -m udp.plot_real_time
+     python src/plot_real_time.py
      ```
 
 2. UART logging 
     
     - real-time streaming of the gait trajectories from the wired communication
-    python -m udp.connection.udp
+    python src/connection/udp.py
 
 
 3. Online RL tuning
-     <!-- - Start two terminals:
+     - Start two terminals:
      ```
      # Terminal A: RL node
      python src/node_RL.py
 
      # Terminal B: Device interface node
      python src/node_interface.py
-     ``` -->
-     - now moved to ossur_knee/scripts/
+     ```
 
 ## Project layout
 (Top-level files and key modules)
@@ -68,21 +79,21 @@ env/                     # Environment and config
     env.py                 # Gym online tuning environment
     var_names.json         # Variable name references
 
-src/udp/                 # Main source code
+src/                     # Main source code
     config.py
     plot_real_time.py      # Real-time plotting demo
-    # node_RL.py             # RL node (Moved/Removed)
-    # node_interface.py      # Device communication interface node (Moved/Removed)
-    ossur_knee_tester.py   # UI for tester
-    adaptive_lqr_master.py # Adaptive LQR
+    node_RL.py             # RL node
+    node_interface.py      # Device communication interface node
+    ossur_knee_tester.py   # UI for tester (unused)
+    adaptive_lqr_master.py # Adaptive LQR (unused)
     utils.py               # Helper utilities
 
-    connection/          # Communication layers
-        udp.py
-        tcp.py                 # (inefficient; unused)
-        device.py
-        receivers.py
-        senders.py
+src/connection/          # Communication layers
+    udp.py
+    tcp.py                 # (inefficient; unused)
+    device.py
+    receivers.py
+    senders.py
 
 experiment/              # Scripts for experiments and data collection
     online_tuning_*.py
